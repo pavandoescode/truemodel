@@ -1,0 +1,85 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-4) var(--s-5) var(--s-3);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+}
+
+.caption {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+}
+
+.count {
+  font-size: var(--t-caption);
+  color: var(--fg-muted);
+}
+
+.svg {
+  width: 100%;
+  height: 64px;
+  display: block;
+  overflow: visible;
+}
+
+.svg line {
+  transition: stroke-width var(--dur-fast) var(--ease);
+}
+
+.scale {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-2);
+  font-size: var(--t-caption);
+  color: var(--fg-subtle);
+  font-family: var(--font-mono);
+}
+
+.scaleMid {
+  font-family: var(--font-sans);
+  color: var(--fg-subtle);
+}
+
+.readout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  min-height: 20px;
+  padding-top: var(--s-1);
+  border-top: 1px solid var(--border);
+  font-size: var(--t-caption);
+  font-family: var(--font-mono);
+  color: var(--fg);
+}
+
+.readoutId {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.readoutHint {
+  color: var(--fg-subtle);
+  font-family: var(--font-sans);
+}
+
+@media (max-width: 560px) {
+  .wrap {
+    padding: var(--s-3) var(--s-4);
+  }
+  .svg {
+    height: 52px;
+  }
+  /* Touch has no hover; the readout row would just sit empty. */
+  .readout {
+    display: none;
+  }
+}

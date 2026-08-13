@@ -1,0 +1,177 @@
+/* Connection panel — endpoint, key, connect. */
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.body {
+  padding: var(--s-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.endpointRow {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.endpointInput {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: var(--t-sm);
+}
+
+.keyRow {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  width: 100%;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  margin-top: var(--s-2);
+}
+
+/* ---------- checkboxes ----------
+   One treatment shared by the /v1 toggle and the remember-key toggle. */
+.v1Label input,
+.persist input {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  border: 2px solid var(--border-strong);
+  border-radius: var(--r-xs);
+  background: var(--bg-surface-2);
+  cursor: pointer;
+  position: relative;
+  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+}
+.v1Label input:checked,
+.persist input:checked {
+  background: var(--brand-500);
+  border-color: var(--brand-500);
+}
+.v1Label input:checked::after,
+.persist input:checked::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 4px;
+  height: 8px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.v1Label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  background: var(--bg-surface-3);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg-strong);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  transition: border-color var(--dur-fast) var(--ease);
+}
+.v1Label:hover {
+  border-color: var(--border-strong);
+}
+
+.persist {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--t-sm);
+  color: var(--fg-muted);
+  cursor: pointer;
+}
+
+/* ---------- error ---------- */
+.errorBox {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  padding: var(--s-3);
+  border-radius: var(--r-md);
+  border: 1px solid rgba(var(--err-rgb), 0.3);
+  background: var(--err-soft);
+  font-size: var(--t-sm);
+}
+
+.errorTitle {
+  display: block;
+  margin-bottom: var(--s-1);
+  color: var(--err-500);
+}
+
+.errorMessage {
+  display: block;
+  margin-bottom: var(--s-2);
+  font-size: var(--t-xs);
+  color: var(--err-500);
+  font-weight: 500;
+}
+
+/* Recovery hints under a connection error. Ruled off from the message itself
+   so "what happened" and "what to do" read as two separate things. */
+.suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  padding-top: var(--s-2);
+  border-top: 1px solid var(--border);
+}
+
+.suggestion {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-2);
+  font-size: var(--t-caption);
+  line-height: 1.5;
+  color: var(--fg-muted);
+}
+
+.suggestion svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--fg-subtle);
+}
+
+.managedHint {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--t-caption);
+  color: var(--fg-muted);
+}
+
+.manage {
+  width: 100%;
+  justify-content: center;
+  gap: var(--s-2);
+  padding: var(--s-4);
+}

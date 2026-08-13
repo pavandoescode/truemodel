@@ -1,0 +1,430 @@
+/* Model readings grid.
+
+   Each model is a self-contained card: id + badges on top, then its
+   readings (latency, throughput, status, identity) on a row beneath.
+   Cards tile two-per-line so a long model list stays roughly half as
+   tall — no header strip to align to, because every reading is already
+   self-labelling (ms, t/s, a status pill, a verdict pill). */
+
+.list {
+  list-style: none;
+  margin: var(--s-4) 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-3);
+  align-items: start;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  background: var(--bg-surface-2);
+  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Status rail: a 2px edge repeating what the pill already says in words.
+   Reinforcement only — never the sole carrier of pass/fail. */
+.row::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 2px;
+  height: 100%;
+  background: transparent;
+  transition: background var(--dur) var(--ease);
+}
+
+.row:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-strong);
+}
+
+.row[data-tone='pass']::before {
+  background: var(--color-success);
+}
+.row[data-tone='fail']::before {
+  background: var(--color-destructive);
+}
+.row[data-tone='partial']::before {
+  background: var(--color-warning);
+}
+.row[data-tone='running']::before {
+  background: var(--color-accent);
+}
+
+.rowLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  min-width: 0;
+  cursor: pointer;
+}
+
+/* The readings for one model, on their own line beneath the id. Left-aligned
+   and wrapping, since a card is narrower than the old full-width row. */
+.readings {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-4);
+  padding-left: calc(15px + var(--s-3)); /* line up under the id, past the checkbox */
+}
+
+/* Matches the connection panel's checkboxes — one treatment across the app. */
+.checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: none;
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--r-xs);
+  background: var(--bg-surface-2);
+  cursor: pointer;
+  position: relative;
+  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+}
+.checkbox:checked {
+  background: var(--brand-500);
+  border-color: var(--brand-500);
+}
+.checkbox:checked::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 3px;
+  height: 7px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.checkbox:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* A model id is an identifier the user reads and compares character by
+   character, so it is set in mono at body size rather than as a heading. */
+.modelId {
+  font-size: var(--t-body-sm);
+  font-weight: 500;
+  color: var(--fg-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.row:hover .modelId {
+  color: var(--accent-400);
+}
+
+/* Numeric cells — tabular figures come from the .tnum utility in base.css.
+   Left-aligned now that readings sit in a wrapping row rather than a column. */
+.cellNum {
+  font-family: var(--font-mono);
+  font-size: var(--t-body-sm);
+  text-align: left;
+  color: var(--fg);
+  white-space: nowrap;
+}
+
+.dash {
+  color: var(--fg-subtle);
+}
+
+.cellStatus {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.cellIdentity {
+  display: flex;
+  justify-content: flex-start;
+  min-width: 0;
+}
+
+/* Plain-language reading of the verdict, on the row itself rather than in the
+   pill's tooltip — a tooltip never opens on touch, so the finding has to be
+   legible without a hover. Spans the full width beneath the reading columns
+   because a sentence won't fit the identity column. */
+.verdictBlurb {
+  margin: 0;
+  padding: var(--s-1) 0 var(--s-1) var(--s-2);
+  border-left: 2px solid var(--border-strong);
+  font-size: var(--t-sm);
+  line-height: var(--lh-normal);
+  color: var(--fg-muted);
+}
+
+/* Tone tints the mismatch cases so a bad reading draws the eye scanning the
+   page — but the sentence still states the finding, so colour is never the
+   only carrier. A pass stays neutral: nothing to flag. */
+.verdictBlurb[data-tone='fail'] {
+  border-left-color: var(--color-destructive);
+  color: var(--fg);
+}
+.verdictBlurb[data-tone='partial'] {
+  border-left-color: var(--color-warning);
+  color: var(--fg);
+}
+.verdictBlurb[data-tone='pending'] {
+  border-left-color: var(--border-strong);
+}
+
+/* ---------- identity evidence ---------- */
+.signalList {
+  list-style: none;
+  margin: var(--s-2) 0 var(--s-1);
+  padding: 0 0 0 var(--s-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+}
+
+.signal {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: var(--s-3);
+  align-items: baseline;
+  font-size: var(--t-sm);
+  padding-left: var(--s-3);
+  border-left: 2px solid var(--border);
+}
+
+/* Each signal repeats its status as a colour on the rail, but the detail text
+   beside it always states the finding in words. */
+.signal[data-status='pass'] {
+  border-left-color: var(--color-success);
+}
+.signal[data-status='fail'] {
+  border-left-color: var(--color-destructive);
+}
+.signal[data-status='partial'] {
+  border-left-color: var(--color-warning);
+}
+.signal[data-status='skip'] {
+  border-left-color: var(--border-strong);
+}
+
+/* A `context` signal describes the provider, not this model. Failing one must
+   not read like a failed model, so the rail stays neutral and the label carries
+   a tag instead. */
+.signal[data-weight='context'][data-status='fail'] {
+  border-left-color: var(--color-warning);
+}
+
+.signalLabel {
+  font-family: var(--font-condensed);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  font-size: var(--t-caption);
+  font-weight: 600;
+  color: var(--fg-muted);
+}
+
+.signalWeight {
+  margin-left: var(--s-2);
+  padding: 0 var(--s-1);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-1, 3px);
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--fg-subtle, var(--fg-muted));
+}
+
+.signalDetail {
+  color: var(--fg);
+  min-width: 0;
+  word-break: break-word;
+}
+
+/* The real model name, inline beside the requested one. Carries the warning
+   tone because seeing it at all means a substitution was detected. */
+.servedAs {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex: none;
+  padding: 2px var(--s-2);
+  border-radius: var(--r-xs);
+  border: 1px solid var(--color-warning);
+  background: color-mix(in srgb, var(--color-warning) 12%, transparent);
+  color: var(--color-warning);
+  font-size: var(--t-caption);
+  font-weight: 500;
+  max-width: 240px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* When the endpoint won't say which model answered, the finding still has to
+   show on the row — but in muted grey, not the warning colour, because it is
+   the absence of evidence rather than a proven substitution. */
+.servedUnknown {
+  flex: none;
+  padding: 2px var(--s-2);
+  border-radius: var(--r-xs);
+  border: 1px dashed var(--border-strong);
+  color: var(--fg-muted);
+  font-size: var(--t-caption);
+  font-style: italic;
+  white-space: nowrap;
+}
+
+/* ---------- attribution ("then which model is it?") ---------- */
+
+/* Set apart from the signal list above with its own surface, because this
+   block mixes a measured fact with an inferred one and the reader needs to
+   see where the evidence weakens. */
+.attribution {
+  margin: var(--s-3) 0 var(--s-1) var(--s-4);
+  padding: var(--s-3);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--bg-surface-2);
+  font-size: var(--t-sm);
+}
+
+.attributionSummary {
+  margin: 0;
+  color: var(--fg-strong);
+  font-weight: 500;
+  line-height: var(--lh-normal);
+}
+
+.attributionFact {
+  margin: var(--s-2) 0 0;
+  color: var(--fg);
+  line-height: var(--lh-normal);
+}
+
+.attributionLabel {
+  margin: var(--s-3) 0 var(--s-1);
+  font-family: var(--font-condensed);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  font-size: var(--t-caption);
+  font-weight: 600;
+  color: var(--fg-muted);
+}
+
+.quoteList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+}
+
+/* Verbatim model output, so it reads as a quotation rather than as our claim. */
+.quote {
+  padding-left: var(--s-3);
+  border-left: 2px solid var(--border-strong);
+  font-family: var(--font-mono);
+  font-size: var(--t-caption);
+  color: var(--fg-muted);
+  word-break: break-word;
+}
+
+.attributionCaveat {
+  margin: var(--s-3) 0 0;
+  padding-top: var(--s-2);
+  border-top: 1px solid var(--border);
+  font-size: var(--t-caption);
+  color: var(--fg-subtle);
+  line-height: var(--lh-normal);
+}
+
+/* ---------- response accordion ---------- */
+.accordion {
+  /* Sits at the foot of the card, beneath the readings row. */
+  margin-top: var(--s-1);
+  border-radius: var(--r-sm);
+}
+
+.summary {
+  cursor: pointer;
+  font-size: var(--t-sm);
+  user-select: none;
+  list-style: none; /* hides the default marker in Firefox */
+  display: flex;
+  align-items: flex-start;
+}
+
+.summary::before {
+  content: '▶';
+  font-size: 9px;
+  margin-top: 5px;
+  margin-right: var(--s-1);
+  transition: transform var(--dur-fast) var(--ease);
+  color: var(--fg-muted);
+  flex-shrink: 0;
+}
+
+.accordion[open] .summary::before {
+  transform: rotate(90deg);
+}
+
+.summary::-webkit-details-marker {
+  display: none;
+}
+
+.failText {
+  color: var(--err-500);
+  font-weight: 500;
+}
+
+.okText {
+  color: var(--fg-muted);
+}
+
+/* Collapsed the response is one line; opened it wraps in full. */
+.summaryText {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.accordion[open] .summaryText {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Two cards per line need real width. Below ~720px (or a narrow right
+   canvas) they get cramped, so drop to a single column. The readings row
+   inside each card already wraps on its own. */
+@media (max-width: 720px) {
+  .list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* Stacked, the two-column signal grid collapses to label above detail. */
+  .signal {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+}
+
+/* Compact random-number fingerprint divergence line, shown under the
+   attribution block when the deep fingerprint probe ran. Muted, because it is
+   a soft signal that supports the verdict rather than deciding it. */
+.fingerprintReadout {
+  margin: var(--s-2) 0 0 var(--s-4);
+  color: var(--fg-muted);
+  font-size: var(--t-caption);
+}

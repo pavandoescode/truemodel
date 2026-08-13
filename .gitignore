@@ -1,0 +1,22 @@
+node_modules/
+.next/
+out/
+build/
+next-env.d.ts
+*.tsbuildinfo
+.env
+.env.local
+.env*.local
+.DS_Store
+npm-debug.log*
+
+# Local-only / private data (never publish)
+.claude/
+.http-mitm-proxy/
+.freebuff/
+scratch/
+_removed/
+ui-brief/
+ui-inspo/
+ui-brief-shots.log
+*.log

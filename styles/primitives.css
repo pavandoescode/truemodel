@@ -1,0 +1,216 @@
+/* Shared primitives. Use these instead of re-implementing per component. */
+
+/* ---------- layout helpers ---------- */
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+.row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+.wrap {
+  flex-wrap: wrap;
+}
+.grow {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.mono {
+  font-family: var(--font-mono);
+  font-variant-ligatures: none;
+}
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.muted {
+  color: var(--fg-muted);
+}
+.subtle {
+  color: var(--fg-subtle);
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.gradient-text {
+  color: var(--color-accent);
+}
+
+/* ---------- surfaces ---------- */
+.card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  position: relative;
+}
+.card:hover {
+  border-color: var(--border-strong);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding: var(--s-4) var(--s-5);
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  /* In the narrow column the status badge and the title cannot share a line.
+     Wrapping the pair keeps the title on one line instead of breaking it. */
+  flex-wrap: wrap;
+}
+.card-title {
+  font-size: var(--t-md);
+  font-weight: 600;
+  color: var(--fg-strong);
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  white-space: nowrap;
+}
+.card-title svg {
+  flex: none;
+}
+.card-head::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: var(--s-5);
+  right: 60%;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(var(--brand-rgb), 0.15), transparent);
+  pointer-events: none;
+}
+.card-sub {
+  font-size: var(--t-sm);
+  color: var(--fg-muted);
+  margin-top: 2px;
+}
+.card-body {
+  padding: var(--s-6);
+  position: relative;
+}
+.card-body-compact {
+  padding: var(--s-4);
+}
+.panel {
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}
+
+/* ---------- buttons ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  height: 40px;
+  padding: 10px 18px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--fg);
+  font-size: var(--t-sm);
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+}
+.btn:active:not(:disabled) {
+  transform: translateY(1px) scale(0.97);
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.btn-primary {
+  background: var(--gradient-brand);
+  border-color: transparent;
+  /* Dark ink on the cyan accent — white would fail contrast on #00E5FF. */
+  color: var(--fg-inverse);
+  font-weight: 600;
+  box-shadow: 0 1px 6px rgba(var(--brand-rgb), 0.2);
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--gradient-brand);
+  filter: brightness(1.1);
+  box-shadow: 0 4px 16px rgba(var(--brand-rgb), 0.4);
+  transform: translateY(-2px);
+}
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--fg-muted);
+}
+.btn-ghost:hover:not(:disabled) {
+  color: var(--fg);
+  background: var(--bg-hover);
+  border-color: var(--border);
+}
+.btn-text {
+  background: transparent;
+  border: none;
+  color: var(--fg-muted);
+  font-weight: 500;
+  padding: 0 8px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-sm);
+  transition: color var(--dur-fast) var(--ease);
+}
+.btn-text:hover:not(:disabled) {
+  color: var(--fg-strong);
+}
+.btn-danger {
+  color: var(--err-500);
+  border-color: rgba(var(--err-rgb), 0.32);
+  background: var(--err-soft);
+}
+.btn-danger:hover:not(:disabled) {
+  background: rgba(var(--err-rgb), 0.2);
+  border-color: rgba(var(--err-rgb), 0.45);
+}
+.btn-sm {
+  height: 32px;
+  padding: 0 var(--s-2);
+  font-size: var(--t-xs);
+}
+.btn-lg {
+  height: 48px;
+  padding: 0 var(--s-5);
+  font-size: var(--t-md);
+}
+.btn-icon {
+  width: 32px;
+  padding: 0;
+}
+.btn-block {
+  width: 100%;
+}

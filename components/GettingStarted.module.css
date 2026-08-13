@@ -1,0 +1,180 @@
+/* The right-hand canvas shown before a connection: a short "how it works"
+   walkthrough plus a rotating lesson, so the setup stage explains itself
+   instead of leaving half the page empty. */
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+  padding: var(--s-6);
+}
+
+.heading {
+  font-family: var(--font-condensed);
+  font-size: var(--t-title-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  color: var(--fg-strong);
+  margin: 0;
+}
+
+.lede {
+  margin: var(--s-2) 0 0;
+  color: var(--fg-muted);
+  font-size: var(--t-body-md);
+  line-height: 1.55;
+  max-width: 52ch;
+}
+
+/* ---------- steps ---------- */
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.step {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+}
+
+.stepIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--r-md);
+  background: var(--bg-surface-3);
+  border: 1px solid var(--border);
+  color: var(--brand-300);
+}
+
+.stepText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.stepTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--t-body-md);
+  font-weight: 600;
+  color: var(--fg-strong);
+}
+
+.stepNum {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--r-full);
+  background: var(--brand-500);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.stepBody {
+  font-size: var(--t-sm);
+  color: var(--fg-muted);
+  line-height: 1.5;
+}
+
+/* ---------- rotating lesson ---------- */
+.tip {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--brand-400);
+  border-radius: var(--r-md);
+  background: var(--bg-surface-2);
+}
+
+.tipIcon {
+  display: inline-flex;
+  flex: none;
+  color: var(--warn-500);
+  margin-top: 2px;
+}
+
+.tipText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  min-width: 0;
+}
+
+.tipLabel {
+  font-family: var(--font-condensed);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  font-size: var(--t-caption);
+  font-weight: 700;
+  color: var(--fg-subtle);
+}
+
+.tipBody {
+  margin: 0;
+  font-size: var(--t-sm);
+  color: var(--fg);
+  line-height: 1.55;
+  min-height: 3.4em;
+}
+
+/* ---------- dots ---------- */
+.dots {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-top: calc(var(--s-3) * -1);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: none;
+  border-radius: var(--r-full);
+  background: var(--bg-surface-3);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+}
+.dot:hover {
+  background: var(--border-strong);
+}
+.dotActive {
+  background: var(--brand-400);
+  transform: scale(1.25);
+}
+
+/* ---------- footer cue ---------- */
+.cta {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  margin: 0;
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--border);
+  font-size: var(--t-sm);
+  color: var(--fg-muted);
+}
+.cta svg {
+  color: var(--brand-300);
+  flex: none;
+}

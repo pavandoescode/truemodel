@@ -1,0 +1,202 @@
+/* Keyframes + animation utility classes. */
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUpBig {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulseSoft {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@keyframes pulseRing {
+  0% {
+    box-shadow: 0 0 0 0 rgba(var(--brand-rgb), 0.25);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(var(--brand-rgb), 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(var(--brand-rgb), 0);
+  }
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes caretBlink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes confettiFall {
+  0% {
+    transform: translateY(-12vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(104vh) rotate(720deg);
+    opacity: 0.9;
+  }
+}
+
+@keyframes barGrow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes borderGlow {
+  0%, 100% {
+    border-color: rgba(var(--brand-rgb), 0.2);
+  }
+  50% {
+    border-color: rgba(var(--brand-rgb), 0.5);
+  }
+}
+
+.anim-fade,
+.anim-fade-in {
+  animation: fadeIn var(--dur) var(--ease) both;
+}
+.anim-slide-up {
+  animation: slideUp var(--dur-slow) var(--ease-out) both;
+}
+.anim-slide-up-big {
+  animation: slideUpBig var(--dur-slower) var(--ease-out) both;
+}
+.anim-slide-in-right {
+  animation: slideInRight var(--dur) var(--ease-out) both;
+}
+.anim-pop,
+.anim-pop-in {
+  animation: popIn var(--dur) var(--ease-spring) both;
+}
+.anim-pulse {
+  animation: pulseSoft 1.5s var(--ease) infinite;
+}
+.anim-glow-pulse {
+  animation: glowPulse 2s var(--ease) infinite;
+}
+
+.spinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid var(--border);
+  border-top-color: var(--brand-400);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex: none;
+  display: inline-block;
+}
+.spinner-lg {
+  width: 20px;
+  height: 20px;
+  border-width: 2.5px;
+}
+
+.stagger > * {
+  animation: slideUp var(--dur-slow) var(--ease-out) both;
+}
+.stagger > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+.stagger > *:nth-child(2) {
+  animation-delay: 40ms;
+}
+.stagger > *:nth-child(3) {
+  animation-delay: 80ms;
+}
+.stagger > *:nth-child(4) {
+  animation-delay: 120ms;
+}
+.stagger > *:nth-child(5) {
+  animation-delay: 160ms;
+}
+.stagger > *:nth-child(6) {
+  animation-delay: 200ms;
+}

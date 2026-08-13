@@ -1,0 +1,274 @@
+/* ==================================================================
+   Design Tokens — Semantic Token System
+   Single theme: Lumosel, a pure black/white monochrome design, keyed on
+   [data-theme='lumosel'].
+
+   The attribute is fixed on <html> in app/layout.tsx — there is no theme
+   toggle and no system resolution, so [data-theme] is always present and
+   there is no flash of the wrong theme.
+   ================================================================== */
+
+/* ────────────────────────────────────────────────────────────── */
+/* Lumosel — a pure black/white monochrome theme.                 */
+/* #000 surface, #fff text, white borders at low alpha, and larger */
+/* radii than the old instrument defaults. Status hues stay fixed. */
+/* ────────────────────────────────────────────────────────────── */
+
+[data-theme='lumosel'] {
+  /* Surfaces — true black base, lifted with white overlays */
+  --color-bg: #000000;
+  --color-bg-elevated: #0a0a0a;
+  --color-bg-hover: #161616;
+  --color-bg-active: #1f1f1f;
+  --color-bg-input: rgba(255, 255, 255, 0.05);
+  --color-bg-glass: rgba(0, 0, 0, 0.92);
+
+  /* Text — white with two muted steps */
+  --color-fg: #ffffff;
+  --color-fg-muted: rgba(255, 255, 255, 0.68);
+  --color-fg-subtle: rgba(255, 255, 255, 0.44);
+
+  /* Borders — white at low alpha */
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-border-strong: rgba(255, 255, 255, 0.15);
+  --color-border-focus: #ffffff;
+
+  /* Accent — white on black, the monochrome brand */
+  --color-accent: #ffffff;
+  --color-accent-hover: rgba(255, 255, 255, 0.86);
+  --color-accent-muted: rgba(255, 255, 255, 0.12);
+
+  /* Semantic — same fixed status hues as the other themes */
+  --color-success: #0ca30c;
+  --color-success-soft: rgba(12, 163, 12, 0.16);
+  --color-warning: #fab219;
+  --color-warning-soft: rgba(250, 178, 25, 0.16);
+  --color-destructive: #e5484d;
+  --color-destructive-soft: rgba(229, 72, 77, 0.16);
+
+  /* Shadows — deep black drop plus an inset white top highlight, the
+     Lumosel signature that separates a raised surface on pure black. */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --shadow-glow: 0 0 0 1px rgba(255, 255, 255, 0.2);
+
+  /* Radii — Lumosel is softer than the instrument default (2–8px). These
+     override the shared :root scale only while this theme is active, so
+     buttons, inputs and cards round to the design's 10/14px corners. */
+  --r-xs: 8px;
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 18px;
+  --r-xl: 22px;
+  --r-2xl: 28px;
+}
+
+/* ────────────────────────────────────────────────────────────── */
+/* Shared / Mode-Agnostic Tokens                                  */
+/* ────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Radii — small and consistent; this is an instrument, not a card UI */
+  --r-xs: 2px;
+  --r-sm: 3px;
+  --r-md: 4px;
+  --r-lg: 6px;
+  --r-xl: 8px;
+  --r-2xl: 12px;
+  --r-full: 999px;
+
+  /* Spacing — 4px base scale. Names are multiples of 4px: --s-N == N*4px. */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-8: 32px;
+  --s-10: 40px;
+  --s-12: 48px;
+  --s-16: 64px;
+  --s-24: 96px;
+
+  /* Typography scale */
+  --t-display-mega: 64px;
+  --t-display-xl: 48px;
+  --t-display-lg: 36px;
+  --t-display-md: 28px;
+  --t-display-sm: 22px;
+  --t-title-md: 18px;
+  --t-title-sm: 16px;
+  --t-body-md: 15px;
+  --t-body-sm: 13px;
+  --t-caption: 12px;
+  --t-code: 13px;
+  --t-button: 13px;
+
+  /* Weight and tracking companions for the display steps. Large type needs
+     tighter tracking than body copy to read as one word rather than letters. */
+  --t-display-lg-weight: 600;
+  --t-display-lg-ls: -0.02em;
+  --t-display-md-weight: 600;
+  --t-display-md-ls: -0.015em;
+  --t-title-md-weight: 600;
+  --t-button-weight: 500;
+
+  /* Legacy mappings */
+  --t-xs: var(--t-caption);
+  --t-sm: var(--t-body-sm);
+  --t-base: var(--t-body-md);
+  --t-md: var(--t-body-md);
+  --t-lg: var(--t-title-md);
+  --t-xl: var(--t-display-sm);
+  --t-2xl: var(--t-display-md);
+  --t-3xl: var(--t-display-lg);
+  --lh-tight: 1.15;
+  --lh-normal: 1.5;
+
+  /* Instrument-label tracking — used on the condensed uppercase role */
+  --tracking-label: 0.08em;
+
+  /* Motion */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.2, 0.64, 1);
+  --dur-fast: 120ms;
+  --dur: 200ms;
+  --dur-slow: 340ms;
+  --dur-slower: 500ms;
+
+  /* Layout */
+  --header-h: 56px;
+  --sidebar-w: 236px;
+  --console-h: 220px;
+  --console-bar-h: 34px;
+  --z-header: 40;
+  --z-sidebar: 30;
+  --z-console: 50;
+  --z-modal: 70;
+  --z-toast: 90;
+  --blur: 18px;
+  --blur-strong: 24px;
+
+  /* ---------- Sequential latency ramp (fast → slow) ----------
+     One hue, monotone lightness, validated with the dataviz
+     validator (--ordinal) against BOTH surfaces: all checks pass.
+     Do not re-step these without re-running the validator. */
+  --latency-1: #86b6ef; /* fastest */
+  --latency-2: #5598e7;
+  --latency-3: #2a78d6;
+  --latency-4: #184f95; /* slowest */
+}
+
+/* ────────────────────────────────────────────────────────────── */
+/* Legacy Token Aliases                                           */
+/* Kept so the existing ~7k lines of consuming CSS keep working.   */
+/* ────────────────────────────────────────────────────────────── */
+
+[data-theme='lumosel'] {
+  /* Brand ramp — monochrome: the brand chrome (buttons, focus rings, glows,
+     selection) reads white rather than a colour accent. The latency dataviz
+     ramp below is left on its validated blue steps — those still read on pure
+     black, and re-stepping them would need the dataviz validator. */
+  --brand-200: rgba(255, 255, 255, 0.55);
+  --brand-300: rgba(255, 255, 255, 0.75);
+  --brand-400: #ffffff;
+  --brand-500: var(--color-accent);
+  --accent-400: #ffffff;
+  --accent-500: var(--color-accent);
+
+  /* RGB triplets — consumed by ~59 rgba(var(--x), a) declarations across
+     styles/ and app/. --brand-rgb is white here so brand shadows/borders/
+     rings render as white on black. */
+  --brand-rgb: 255, 255, 255;
+  --ok-rgb: 12, 163, 12;
+  --warn-rgb: 250, 178, 25;
+  --err-rgb: 229, 72, 77;
+
+  --ok-500: var(--color-success);
+  --ok-600: #0a8a0a;
+  --ok-soft: var(--color-success-soft);
+  --warn-500: var(--color-warning);
+  --warn-soft: var(--color-warning-soft);
+  --err-500: var(--color-destructive);
+  --err-soft: var(--color-destructive-soft);
+  --info-500: var(--color-accent);
+  --info-soft: var(--color-accent-muted);
+  --muted-500: var(--color-fg-muted);
+  --muted-soft: var(--color-bg-hover);
+
+  --bg-root: var(--color-bg);
+  --bg-app: var(--color-bg);
+  --bg-surface: var(--color-bg-elevated);
+  --bg-surface-2: var(--color-bg-hover);
+  /* Third step: used where a card sits on a raised panel (drop slots, nested
+     rows) and needs to separate from --bg-surface-2 without a border. */
+  --bg-surface-3: var(--color-bg-active);
+  --bg-elevated: var(--color-bg-elevated);
+  --bg-input: var(--color-bg-input);
+  --bg-hover: var(--color-bg-hover);
+  --bg-active: var(--color-bg-hover);
+  --bg-glass: var(--color-bg-glass);
+  --bg-glass-strong: var(--color-bg);
+  --bg-code: var(--color-bg-elevated);
+
+  --fg: var(--color-fg);
+  --fg-muted: var(--color-fg-muted);
+  --fg-subtle: var(--color-fg-subtle);
+
+  --border: var(--color-border);
+  --border-strong: var(--color-border-strong);
+  --border-focus: var(--color-border-focus);
+  --border-brand: rgba(var(--brand-rgb), 0.3);
+
+  --shadow-glow-strong: 0 0 0 1px rgba(var(--brand-rgb), 0.3);
+  --ring: 0 0 0 3px rgba(var(--brand-rgb), 0.35);
+
+  /* Flat fills replace the old gradients — the instrument direction
+     spends its boldness on the latency spread, not on surface sheen. */
+  --gradient-brand: var(--color-accent);
+  --gradient-brand-soft: var(--color-accent-muted);
+  --gradient-sheen: none;
+  --gradient-text: none;
+  --gradient-text-strong: none;
+
+  --chart-grid: var(--color-border);
+  --chart-line: var(--color-accent);
+
+  /* Geist has no condensed cut, so the label voice reuses the same family
+     and relies on --tracking-label + uppercase for its instrument feel. */
+  --font-sans: var(--font-geist-sans), -apple-system, system-ui, sans-serif;
+  --font-condensed: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-ui: var(--font-sans);
+
+  --fg-strong: #ffffff;
+  --fg-inverse: #000000;
+  --bg-scrim: rgba(0, 0, 0, 0.82);
+}
+
+/* ────────────────────────────────────────────────────────────── */
+/* Reduced Motion Support                                         */
+/* ────────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────── */
+/* Global Focus Styles                                            */
+/* ────────────────────────────────────────────────────────────── */
+
+*:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}

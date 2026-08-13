@@ -1,0 +1,1281 @@
+.shell {
+  min-height: 100dvh;
+  display: flex;
+  padding: var(--s-4) var(--s-6);
+}
+
+/* Transient confirmation banner, anchored bottom-centre so it never covers the
+   primary controls. Fades in from below. */
+.toast {
+  position: fixed;
+  bottom: var(--s-6);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-md);
+  border: 1px solid var(--border-strong);
+  background: var(--bg-surface-3);
+  color: var(--fg-strong);
+  font-size: var(--t-sm);
+  font-weight: 500;
+  box-shadow: var(--shadow-lg);
+  animation: toastIn var(--dur) var(--ease);
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translate(-50%, 12px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.main {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+@media (min-width: 1024px) {
+  .main {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  /* The bench is two-column from the start: controls on the left, and the
+     right canvas carries a "how it works" walkthrough before a connection,
+     then the readings once models arrive. It never collapses to a centred
+     column — an empty half-page read as "not started yet" and pushed the
+     controls into the middle only to shove them left on connect. */
+  .main[data-stage='setup'] {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+}
+
+.sidebar {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+@media (min-width: 1024px) {
+  .sidebar {
+    width: 340px;
+    flex-shrink: 0;
+    position: sticky;
+    top: var(--s-4);
+    max-height: calc(100vh - (2 * var(--s-4)));
+    overflow-y: auto;
+  }
+}
+
+/* ---------- Sidebar Toggle ---------- */
+.sidebarToggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  background: var(--bg-surface-2);
+  color: var(--fg-muted);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all var(--dur-fast) var(--ease);
+  flex: none;
+}
+.sidebarToggle:hover {
+  border-color: var(--border-strong);
+  color: var(--fg);
+  background: var(--bg-hover);
+}
+
+@media (max-width: 1024px) {
+  .sidebarToggle {
+    display: inline-flex;
+  }
+}
+
+/* Collapsed, the sidebar keeps only its header — the toggle that reopens it
+   lives there, so hiding the header would strand the user. Selects by position
+   rather than by class: the panels below are components with their own modules. */
+.sidebarCollapsed > *:not(.appHeader) {
+  display: none;
+}
+@media (min-width: 1025px) {
+  .sidebarCollapsed {
+    width: 0;
+    min-width: 0;
+    overflow: hidden;
+    padding: 0;
+    margin: 0;
+  }
+}
+
+/* ---------- Skeleton Card ---------- */
+.skeletonCard {
+  height: 72px;
+  border-radius: var(--r-md);
+  background: linear-gradient(90deg, var(--bg-surface-2) 25%, var(--bg-surface-3) 50%, var(--bg-surface-2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+  border: 1px solid var(--border);
+}
+
+/* ---------- Search Group ---------- */
+.searchGroup {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 200px;
+  position: relative;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  transition: border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+}
+.searchGroup:focus-within {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 2px rgba(var(--brand-rgb), 0.12);
+  background: var(--bg-surface-2);
+}
+.searchIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--s-2) 0 var(--s-3);
+  font-size: 14px;
+  opacity: 0.5;
+  flex: none;
+}
+.searchInput {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  height: 34px;
+  padding: 0 var(--s-2);
+  flex: 1;
+  min-width: 0;
+  font-size: var(--t-sm);
+  color: var(--fg);
+  outline: none;
+}
+.searchInput::placeholder {
+  color: var(--fg-subtle);
+}
+.clearSearch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: transparent;
+  color: var(--fg-subtle);
+  cursor: pointer;
+  border-radius: var(--r-xs);
+  font-size: 12px;
+  flex: none;
+  margin-right: var(--s-1);
+}
+.clearSearch:hover {
+  color: var(--fg);
+  background: var(--bg-hover);
+}
+
+/* ---------- Filter Actions Group ---------- */
+.filterGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+}
+.filterActions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+}
+
+/* ---------- Sort Select ---------- */
+.sortSelect {
+  min-width: 120px;
+}
+
+/* ---------- Metric bar ----------
+   Kept for the "Total models" card, which reads the pass share as a bar. */
+.statPass { color: var(--ok-500); }
+.statBar {
+  flex: 1;
+  min-width: 80px;
+  height: 6px;
+  border-radius: var(--r-full);
+  background: var(--bg-surface-3);
+  overflow: hidden;
+}
+.statBarFill {
+  height: 100%;
+  border-radius: var(--r-full);
+  background: var(--brand-500);
+  transition: width var(--dur-slow) var(--ease-out);
+}
+
+/* ---------- Copy Button ---------- */
+.copyBtn {
+  position: absolute;
+  top: var(--s-2);
+  right: var(--s-2);
+  z-index: 1;
+}
+.jsonPreviewWrap {
+  position: relative;
+}
+
+/* ---------- Empty State Wrapper ----------
+   Deliberately short: the empty state says what is missing, and the panel
+   that fixes it is already on screen, so reserving a full viewport of dashed
+   box for a two-line message just pushes the real controls off the fold. */
+.emptyStateWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--s-8) var(--s-4);
+  gap: var(--s-2);
+  background: var(--bg-surface-2);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--r-lg);
+}
+.emptyIcon {
+  color: var(--fg-subtle);
+}
+.emptyTitle {
+  font-size: var(--t-body-md);
+  font-weight: 600;
+  color: var(--fg-strong);
+  margin: 0;
+}
+.emptySub {
+  font-size: var(--t-sm);
+  color: var(--fg-muted);
+  max-width: 400px;
+  margin: 0;
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+/* ---------- App Header / Hero ---------- */
+.appHeader {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  margin-bottom: var(--s-2);
+  position: relative;
+  padding: var(--s-4) var(--s-5);
+  background: var(--bg-surface-2);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--border);
+}
+
+.appHeader::before {
+  display: none;
+}
+
+.appHeader::after {
+  display: none;
+}
+
+.headerTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  flex-wrap: wrap;
+}
+
+.headerNav {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  position: relative;
+  z-index: 1;
+}
+
+/* Saved-key status — sidebar widget */
+.providerToggle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-3) var(--s-4);
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}
+
+.providerToggleHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+}
+
+.providerToggleLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.providerToggleLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--t-xs);
+  font-weight: 600;
+  color: var(--brand-300);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.providerToggleLink:hover {
+  color: var(--brand-200);
+}
+
+.providerToggleHint {
+  font-size: var(--t-xs);
+  color: var(--fg-subtle);
+  line-height: 1.4;
+}
+
+/* Instrument label, not a logotype: the panel is named the way a bench meter
+   is silkscreened, so the latency spread stays the loudest thing on the page. */
+.title {
+  font-family: var(--font-condensed);
+  font-size: var(--t-title-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  color: var(--fg-strong);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-width: 0;
+}
+
+.title svg {
+  flex-shrink: 0;
+  color: var(--fg-subtle);
+}
+
+.subtitle {
+  margin: var(--s-1) 0 0;
+  color: var(--fg-muted);
+  font-size: var(--t-body-md);
+  max-width: 720px;
+  line-height: 1.5;
+  position: relative;
+  z-index: 1;
+}
+
+/* Closes the header card. Ruled off above rather than styled as a button: it is
+   a way out to the reading page, not a control that acts on the bench. The
+   trailing chevron is pushed to the far edge so the row reads as a link to
+   somewhere else, and the whole row is the hit target on touch. */
+.headerLink {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-top: var(--s-3);
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--border);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  color: var(--brand-300);
+  text-decoration: none;
+  position: relative;
+  z-index: 1;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.headerLink:hover {
+  color: var(--brand-200);
+}
+
+.headerLink svg:last-child {
+  margin-left: auto;
+  flex: none;
+}
+
+.headerLink svg:first-child {
+  flex: none;
+}
+
+/* The connection panel, its checkboxes and its error box moved to
+   components/ConnectionPanel.module.css. Only .field stays — the prompt box
+   and the profile form still use it. */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.persist {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--t-sm);
+  color: var(--fg-muted);
+  cursor: pointer;
+}
+
+.persist input {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  border: 2px solid var(--border-strong);
+  border-radius: var(--r-xs);
+  background: var(--bg-surface-2);
+  cursor: pointer;
+  position: relative;
+  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+}
+.persist input:checked {
+  background: var(--brand-500);
+  border-color: var(--brand-500);
+}
+.persist input:checked::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 4px;
+  height: 8px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.errorBox {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  padding: var(--s-3);
+  border-radius: var(--r-md);
+  border: 1px solid rgba(var(--err-rgb), 0.3);
+  background: var(--err-soft);
+  font-size: var(--t-sm);
+}
+
+.errorBox strong {
+  color: var(--err-500);
+}
+
+/* Saved provider profiles */
+.profileBody {
+  padding: var(--s-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.profileForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  background: var(--bg-surface-2);
+}
+
+.profileFormActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--s-2);
+}
+
+.profileNotice {
+  padding: var(--s-3);
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  background: var(--bg-surface-2);
+  font-size: var(--t-sm);
+  color: var(--fg-strong);
+}
+
+.profileList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.profileItem {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding: var(--s-3);
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  background: var(--bg-surface-2);
+  transition: border-color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
+}
+
+.profileItem:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-surface-3);
+}
+
+.profileItemActive {
+  border-color: var(--brand-400);
+}
+
+.profileMain {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.profileTitleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.profileName {
+  font-weight: 700;
+  color: var(--fg-strong);
+  overflow-wrap: anywhere;
+}
+
+.profileHost {
+  overflow-wrap: anywhere;
+}
+
+.profileRemark {
+  font-size: var(--t-sm);
+  color: var(--fg-muted);
+  overflow-wrap: anywhere;
+}
+
+.profileMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.profileActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.profileConfirm {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Main Content Area */
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  padding: var(--s-6);
+}
+
+/* Dashboard Layout */
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--s-4);
+  margin-bottom: var(--s-4);
+}
+
+.metricCard {
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: var(--s-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  position: relative;
+  overflow: hidden;
+}
+
+.metricCard::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--brand-500);
+  opacity: 0.5;
+}
+
+.metricLabel {
+  font-size: var(--t-xs);
+  color: var(--fg-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.metricValue {
+  font-size: var(--t-display-md);
+  font-weight: var(--t-display-md-weight);
+  letter-spacing: var(--t-display-md-ls);
+  color: var(--fg-strong);
+}
+
+/* Search & Filter Row */
+.searchFilterRow {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 200px;
+  font-size: var(--t-sm);
+}
+
+.filterSelect {
+  min-width: 140px;
+}
+
+.prompt {
+  font-family: var(--font-mono);
+  font-size: var(--t-sm);
+}
+
+.promptHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  margin-bottom: var(--s-2);
+}
+
+.presets {
+  display: flex;
+  gap: var(--s-1);
+}
+
+.preset {
+  font-size: var(--t-xs);
+  padding: var(--s-1) var(--s-2);
+  white-space: nowrap;
+}
+
+.preset[aria-pressed='true'] {
+  background: var(--bg-surface-3);
+  border-color: var(--border-strong);
+  font-weight: 600;
+}
+
+/* Identity verdict tallies, above the table. Each stat states its meaning in
+   words; the colour only reinforces it. */
+.identitySummary {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  flex-wrap: wrap;
+  margin-top: var(--s-4);
+  padding: var(--s-3) var(--s-4);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--bg-surface-2);
+  font-size: var(--t-sm);
+}
+
+.identityStat {
+  font-family: var(--font-condensed);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  font-size: var(--t-caption);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.identityStat[data-tone='pass'] {
+  color: var(--color-success);
+}
+
+.identityStat[data-tone='fail'] {
+  color: var(--color-destructive);
+}
+
+.identityStat[data-tone='partial'] {
+  color: var(--color-warning);
+}
+
+.testBar {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+  padding-bottom: var(--s-4);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Model Cards Grid */
+.modelList {
+  list-style: none;
+  margin: var(--s-4) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+/* ========== Model Type Tabs ========== */
+.modelTabs {
+  display: flex;
+  gap: var(--s-1);
+  padding: var(--s-1);
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  margin-bottom: var(--s-3);
+}
+.modelTab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-4);
+  border: 2px solid transparent;
+  border-radius: var(--r-md);
+  background: transparent;
+  cursor: pointer;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  color: var(--fg-muted);
+  transition: all var(--dur-fast) var(--ease);
+  white-space: nowrap;
+}
+.modelTab:hover {
+  background: var(--bg-hover);
+  color: var(--fg);
+}
+.modelTabActive {
+  border-color: var(--brand-400);
+  background: rgba(var(--brand-rgb), 0.08);
+  color: var(--fg-strong);
+  box-shadow: 0 0 0 1px rgba(var(--brand-rgb), 0.12);
+}
+.modelTabCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--r-full);
+  background: var(--bg-surface-3);
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--fg-muted);
+  line-height: 1;
+}
+.modelTabActive .modelTabCount {
+  background: rgba(var(--brand-rgb), 0.15);
+  color: var(--brand-300);
+}
+
+/* The readings table (header strip, rows, numeric cells, status rail and the
+   response accordion) lives in components/ModelTable.module.css. */
+
+.spreadSlot {
+  margin: var(--s-4) 0;
+}
+
+.headActions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+}
+
+.concurrentToggle {
+  cursor: pointer;
+}
+
+.shortcutHint {
+  margin-left: auto;
+}
+
+.moreWrap {
+  position: relative;
+}
+
+.menuItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  text-align: left;
+  justify-content: flex-start;
+}
+
+.menuItemDanger {
+  color: var(--color-destructive);
+}
+
+.saveStatus {
+  text-align: center;
+  margin-top: var(--s-3);
+}
+
+.saveStatusAction {
+  margin-top: var(--s-3);
+}
+
+.cliOutput {
+  margin-top: var(--s-3);
+  text-align: left;
+}
+
+.cliOutput .codePreview {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.codePreview[data-tone='error'] code {
+  color: var(--color-destructive);
+}
+
+/* Save-status text. Failure wears the error hue, success the good hue — both
+   sit beside a word, never carrying the outcome on color alone. */
+.failText {
+  font-size: var(--t-xs);
+  color: var(--err-500);
+  font-weight: 500;
+}
+
+.successText {
+  color: var(--ok-500);
+  font-weight: 600;
+  font-size: var(--t-sm);
+}
+
+/* ---------- save-config modal contents ----------
+   The modal shell itself is components/Modal.module.css; these are the
+   pieces this page puts inside it. */
+.modalSub {
+  font-size: var(--t-sm);
+  color: var(--fg-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.jsonPreview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+}
+
+.codePreview {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: var(--s-3);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  max-height: 140px;
+  overflow-y: auto;
+  color: var(--fg);
+}
+
+/* Footer */
+.footer {
+  text-align: center;
+  margin-top: var(--s-6);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--border);
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (max-width: 560px) {
+  .shell {
+    padding: var(--s-4) var(--s-3);
+  }
+  .searchFilterRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .searchGroup {
+    min-width: 0;
+  }
+  .filterGroup {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .statBar {
+    width: 100%;
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.dropdownMenu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: var(--s-2);
+  box-shadow: var(--shadow-md);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  min-width: 150px;
+}
+
+/* ========== Drag-and-Drop Model Mapper ========== */
+.dndMapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+}
+
+/* --- Model Pool (source cards) --- */
+.dndPool {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+.dndPoolLabel {
+  font-size: var(--t-sm);
+  font-weight: 600;
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.dndPoolList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  min-height: 48px;
+  padding: var(--s-3);
+  background: var(--bg-surface-2);
+  border: 1px dashed var(--border);
+  border-radius: var(--r-md);
+}
+
+/* --- Draggable Card --- */
+.dndCard {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--s-2) var(--s-3);
+  background: var(--bg-surface-3);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  cursor: grab;
+  user-select: none;
+  transition: all var(--dur-fast) var(--ease);
+  position: relative;
+  max-width: 240px;
+}
+.dndCard:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+.dndCard:active {
+  cursor: grabbing;
+}
+.dndCardDragging {
+  opacity: 0.35;
+  transform: scale(0.95);
+  box-shadow: none;
+}
+.dndCardSelected {
+  border-color: var(--color-accent);
+  background: rgba(var(--brand-rgb), 0.10);
+  box-shadow: 0 0 0 2px rgba(var(--brand-rgb), 0.25);
+}
+.dndCardName {
+  font-size: var(--t-sm);
+  font-weight: 600;
+  color: var(--fg-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dndCardMetrics {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+/* Readouts, not statuses: a latency or throughput figure wears text ink and a
+   neutral chip. Status hues stay reserved for pass/fail. */
+.dndMetricBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: var(--r-full);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  background: var(--bg-surface);
+  color: var(--fg-muted);
+  border: 1px solid var(--border);
+}
+.dndMetricBadge svg {
+  color: var(--fg-subtle);
+}
+
+/* --- Drop Zone Slots --- */
+.dndSlots {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--s-3);
+}
+@media (max-width: 560px) {
+  .dndSlots {
+    grid-template-columns: 1fr;
+  }
+}
+.dndSlotsSingle {
+  grid-template-columns: 1fr;
+}
+
+.dndSlot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-3);
+  border: 2px dashed var(--border);
+  border-radius: var(--r-lg);
+  background: var(--bg-surface-2);
+  transition: all var(--dur-fast) var(--ease);
+  min-height: 88px;
+  position: relative;
+}
+.dndSlotOver {
+  border-color: var(--color-accent);
+  background: rgba(var(--brand-rgb), 0.06);
+  box-shadow: 0 0 0 3px rgba(var(--brand-rgb), 0.12);
+  transform: scale(1.01);
+}
+.dndSlotFilled {
+  border-style: solid;
+  border-color: var(--border-strong);
+  background: var(--bg-surface-3);
+}
+.dndSlotArmed {
+  cursor: pointer;
+  border-color: var(--color-accent);
+}
+.dndSlotArmed:hover,
+.dndSlotArmed:focus-visible {
+  background: rgba(var(--brand-rgb), 0.06);
+  box-shadow: 0 0 0 3px rgba(var(--brand-rgb), 0.12);
+  outline: none;
+}
+.dndSlotHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+.dndSlotIcon {
+  display: inline-flex;
+  color: var(--fg-muted);
+}
+.dndSlotAlias {
+  font-family: var(--font-condensed);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  color: var(--fg-strong);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+}
+
+.dndSlotCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  animation: fadeIn 0.2s var(--ease);
+}
+.dndSlotCardInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.dndSlotCardName {
+  font-size: var(--t-sm);
+  font-weight: 600;
+  color: var(--fg-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dndSlotClear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: var(--fg-subtle);
+  cursor: pointer;
+  border-radius: var(--r-xs);
+  font-size: 12px;
+  flex: none;
+  transition: all var(--dur-fast) var(--ease);
+}
+.dndSlotClear:hover {
+  color: var(--err-500);
+  background: rgba(var(--err-rgb), 0.1);
+}
+
+.dndSlotEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  flex: 1;
+  font-size: var(--t-sm);
+  color: var(--fg-subtle);
+  font-style: italic;
+}
+
+.dndSlotSelect {
+  width: 100%;
+  appearance: none;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  color: var(--fg);
+  font-size: var(--t-sm);
+  font-style: normal;
+  padding: 0 var(--s-6) 0 var(--s-3);
+  height: 36px;
+  cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, var(--fg-muted) 50%),
+    linear-gradient(135deg, var(--fg-muted) 50%, transparent 50%);
+  background-position: calc(100% - 15px) 14px, calc(100% - 10px) 14px;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+.dndSlotSelect:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: var(--ring);
+  background-color: var(--bg-surface-2);
+}
+
+/* ========== Save Target Picker ========== */
+.saveTargetPicker {
+  display: flex;
+  gap: var(--s-2);
+  padding: var(--s-2);
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+}
+.saveTargetBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  border: 2px solid transparent;
+  border-radius: var(--r-md);
+  background: transparent;
+  cursor: pointer;
+  transition: all var(--dur-fast) var(--ease);
+  color: var(--fg-muted);
+}
+.saveTargetBtn:hover {
+  background: var(--bg-hover);
+  color: var(--fg);
+}
+.saveTargetActive {
+  border-color: var(--brand-400);
+  background: rgba(var(--brand-rgb), 0.08);
+  color: var(--fg-strong);
+  box-shadow: 0 0 0 2px rgba(var(--brand-rgb), 0.1);
+}
+.saveTargetIcon {
+  display: inline-flex;
+  flex: none;
+  color: var(--fg-muted);
+}
+.saveTargetInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+}
+.saveTargetLabel {
+  font-size: var(--t-sm);
+  font-weight: 700;
+}
+.saveTargetPath {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--fg-subtle);
+  opacity: 0.8;
+}

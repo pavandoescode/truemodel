@@ -1,0 +1,47 @@
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  font-family: var(--font-condensed);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: var(--t-caption);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pill svg {
+  flex-shrink: 0;
+}
+
+.pill[data-status='pass'] {
+  color: var(--color-success);
+}
+
+.pill[data-status='fail'] {
+  color: var(--color-destructive);
+}
+
+.pill[data-status='partial'] {
+  color: var(--color-warning);
+}
+
+.pill[data-status='running'] {
+  color: var(--color-accent);
+}
+
+.pill[data-status='pending'] {
+  color: var(--fg-subtle);
+}
+
+.spin {
+  animation: statusSpin 900ms linear infinite;
+}
+
+@keyframes statusSpin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin { animation: none; }
+}

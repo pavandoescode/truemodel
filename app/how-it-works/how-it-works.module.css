@@ -1,0 +1,477 @@
+/* How it works — the methodology page.
+   This is the one screen in the app built for reading rather than for
+   measuring, so it runs a single measured prose column instead of the bench's
+   dense instrument grid. Tokens only: no raw colours, no second theme. */
+
+.page {
+  min-height: 100dvh;
+  background: var(--color-bg);
+  color: var(--fg);
+  padding: var(--s-4) var(--s-6) var(--s-16);
+}
+
+.header {
+  max-width: 840px;
+  margin: 0 auto var(--s-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  align-self: flex-start;
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--bg-surface-2);
+  color: var(--fg-muted);
+  font-size: var(--t-sm);
+  font-weight: 500;
+  text-decoration: none;
+  transition:
+    color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    background var(--dur-fast) var(--ease);
+}
+
+.back:hover {
+  color: var(--fg);
+  border-color: var(--border-strong);
+  background: var(--bg-hover);
+}
+
+/* Same instrument-label voice as the bench's own h1, so arriving here does
+   not feel like a different product. */
+.title {
+  font-family: var(--font-condensed);
+  font-size: var(--t-display-md);
+  font-weight: var(--t-display-md-weight);
+  letter-spacing: var(--t-display-md-ls);
+  color: var(--fg-strong);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.title svg {
+  flex: none;
+  color: var(--fg-subtle);
+}
+
+.lede {
+  margin: 0;
+  max-width: 70ch;
+  font-size: var(--t-body-md);
+  line-height: 1.6;
+  color: var(--fg-muted);
+}
+
+.main {
+  max-width: 840px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-6);
+}
+
+.section {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: var(--s-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.sectionHead {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: var(--t-title-md);
+  font-weight: var(--t-title-md-weight);
+  color: var(--fg-strong);
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.sectionTitle svg {
+  flex: none;
+  color: var(--fg-subtle);
+}
+
+.prose {
+  margin: 0;
+  max-width: 70ch;
+  font-size: var(--t-body-md);
+  line-height: 1.65;
+  color: var(--fg-muted);
+}
+
+.prose strong {
+  color: var(--fg);
+  font-weight: 600;
+}
+
+/* Inline code appears in every prose slot on the page, so the treatment is
+   declared once for all of them rather than per block. */
+.prose code,
+.tierBody code,
+.stepBody code,
+.signalBody code,
+.verdictBody code,
+.limitBody code,
+.calloutText code {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  padding: 1px 5px;
+  border-radius: var(--r-xs);
+  background: var(--bg-input);
+  color: var(--fg);
+}
+
+/* ---------- Evidence tiers ---------- */
+/* The three tiers are ranked, so they are drawn as a ladder with a left rule
+   whose colour carries the rank — but the rank is also written in words
+   ("Near-proof", "Real but conditional", "Never proof"), never colour alone. */
+.tiers {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.tier {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  padding: var(--s-3) var(--s-4);
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-radius: var(--r-md);
+}
+
+.tier[data-rank='proof'] {
+  border-left-color: var(--ok-500);
+}
+.tier[data-rank='conditional'] {
+  border-left-color: var(--warn-500);
+}
+.tier[data-rank='never'] {
+  border-left-color: var(--err-500);
+}
+
+.tierHead {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+}
+
+.tierName {
+  font-size: var(--t-body-md);
+  font-weight: 600;
+  color: var(--fg-strong);
+}
+
+.tierRank {
+  font-family: var(--font-condensed);
+  font-size: var(--t-caption);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  color: var(--fg-subtle);
+}
+
+.tierBody {
+  margin: 0;
+  font-size: var(--t-body-sm);
+  line-height: 1.6;
+  color: var(--fg-muted);
+}
+
+/* ---------- Numbered run sequence ---------- */
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.step {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  gap: var(--s-3);
+  align-items: start;
+}
+
+.stepNum {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--r-full);
+  border: 1px solid var(--border-strong);
+  background: var(--bg-surface-2);
+  font-family: var(--font-mono);
+  font-size: var(--t-caption);
+  font-weight: 600;
+  color: var(--fg);
+  flex: none;
+}
+
+.stepText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.stepTitle {
+  font-size: var(--t-body-md);
+  font-weight: 600;
+  color: var(--fg-strong);
+}
+
+.stepBody {
+  font-size: var(--t-body-sm);
+  line-height: 1.6;
+  color: var(--fg-muted);
+}
+
+/* ---------- Signal list ---------- */
+/* Each signal shows its weight as a word-labelled chip; the weight is the part
+   people misread, so it is never left to be inferred from position. */
+.signals {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.signal {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--s-2) var(--s-3);
+  align-items: baseline;
+  padding: var(--s-3) var(--s-4);
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}
+
+.signalName {
+  font-size: var(--t-body-sm);
+  font-weight: 600;
+  color: var(--fg-strong);
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-width: 0;
+}
+
+.signalName svg {
+  flex: none;
+  color: var(--fg-subtle);
+}
+
+.signalWeight {
+  font-family: var(--font-condensed);
+  font-size: var(--t-caption);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  padding: 2px var(--s-2);
+  border-radius: var(--r-full);
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.signalWeight[data-weight='hard'] {
+  background: var(--err-soft);
+  color: var(--err-500);
+  border-color: rgba(var(--err-rgb), 0.28);
+}
+.signalWeight[data-weight='soft'] {
+  background: var(--warn-soft);
+  color: var(--warn-500);
+  border-color: rgba(var(--warn-rgb), 0.28);
+}
+.signalWeight[data-weight='context'] {
+  background: var(--muted-soft);
+  color: var(--fg-muted);
+  border-color: var(--border);
+}
+
+.signalBody {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: var(--t-body-sm);
+  line-height: 1.6;
+  color: var(--fg-muted);
+}
+
+/* ---------- Verdict ladder ---------- */
+.verdicts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+/* Each entry stacks rather than putting the pill in its own column: every list
+   item is an independent grid, so a column of pills would only *look* like it
+   should align and wouldn't. The pill sits on its own line above the text. */
+.verdict {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-1);
+  padding: var(--s-3) var(--s-4);
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}
+
+.verdictBody {
+  margin: 0;
+  font-size: var(--t-body-sm);
+  line-height: 1.6;
+  color: var(--fg-muted);
+}
+
+.verdictWhen {
+  margin: 0;
+  font-size: var(--t-caption);
+  line-height: 1.55;
+  color: var(--fg-subtle);
+}
+
+/* ---------- Limits ---------- */
+/* Deliberately the same visual weight as the sections above it: the blind
+   spots are part of the method, not a disclaimer to be skimmed past. */
+.limits {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.limit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  padding: var(--s-3) var(--s-4);
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--warn-500);
+  border-radius: var(--r-md);
+}
+
+.limitTitle {
+  font-size: var(--t-body-sm);
+  font-weight: 600;
+  color: var(--fg-strong);
+}
+
+.limitBody {
+  margin: 0;
+  font-size: var(--t-body-sm);
+  line-height: 1.6;
+  color: var(--fg-muted);
+}
+
+.limitBody strong {
+  color: var(--fg);
+  font-weight: 600;
+}
+
+/* ---------- Callout ---------- */
+.callout {
+  display: flex;
+  gap: var(--s-3);
+  align-items: flex-start;
+  padding: var(--s-4);
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+}
+
+.callout svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--fg-subtle);
+}
+
+.calloutText {
+  margin: 0;
+  font-size: var(--t-body-sm);
+  line-height: 1.65;
+  color: var(--fg-muted);
+}
+
+.calloutText strong {
+  color: var(--fg);
+  font-weight: 600;
+}
+
+/* ---------- Footer ---------- */
+.footer {
+  max-width: 840px;
+  margin: var(--s-6) auto 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  flex-wrap: wrap;
+}
+
+.footerNote {
+  margin: 0;
+  font-size: var(--t-caption);
+  color: var(--fg-subtle);
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding: var(--s-3) var(--s-4) var(--s-12);
+  }
+
+  .section {
+    padding: var(--s-4);
+  }
+
+  .title {
+    font-size: var(--t-display-sm);
+  }
+
+  /* The weight chip drops under the signal name rather than squeezing it. */
+  .signal {
+    grid-template-columns: 1fr;
+  }
+
+  .signalWeight {
+    justify-self: start;
+  }
+}
