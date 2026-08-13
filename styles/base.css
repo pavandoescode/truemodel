@@ -10,6 +10,11 @@ html, body { height: 100%; }
 
 html {
   -webkit-text-size-adjust: 100%;
+  /* Render the UI at 90% by default — the measurement-first layout is dense,
+     and users were manually zooming the browser to 90% to fit it comfortably.
+     `zoom` scales the whole px-based token system uniformly (unlike font-size,
+     since the design uses px, not rem). Widely supported in modern browsers. */
+  zoom: 0.9;
 }
 
 /* Drives native scrollbars and form controls. Lumosel is a dark theme. */
