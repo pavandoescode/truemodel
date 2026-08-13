@@ -797,7 +797,7 @@ export default function Page(): ReactElement {
           <div className={styles.appHeader}>
             <div className={styles.headerTop}>
               <h1 className={styles.title}>
-                <Zap size={15} aria-hidden="true" /> Provider validator
+                <Zap size={15} aria-hidden="true" /> truemodel.tech
               </h1>
               <div className={styles.headerNav}>
                 <button

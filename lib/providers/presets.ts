@@ -30,7 +30,7 @@ export const PROVIDER_PRESETS: ProviderPreset[] = [
     authStyle: 'bearer',
     headers: [
       { key: 'HTTP-Referer', value: 'http://localhost:3000' },
-      { key: 'X-Title', value: 'Provider Validator' },
+      { key: 'X-Title', value: 'truemodel.tech' },
     ],
     accent: '#6467f2',
     docsUrl: 'https://openrouter.ai/docs',

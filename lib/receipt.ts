@@ -194,7 +194,7 @@ export function buildReceiptMarkdown(input: ReceiptInput): string {
   const reports = input.reports ?? [];
 
   const out: string[] = [];
-  out.push('# Provider Validator — Evidence Receipt');
+  out.push('# truemodel.tech — Evidence Receipt');
   out.push('');
   out.push(`- Host: ${host}`);
   out.push(`- Checked at: ${isoStamp(at)}`);
@@ -216,7 +216,7 @@ export function buildReceiptMarkdown(input: ReceiptInput): string {
   out.push('## Reproduce');
   out.push('');
   out.push(
-    `Anyone can re-run these exact checks against \`${host}\` with Provider Validator ` +
+    `Anyone can re-run these exact checks against \`${host}\` with truemodel.tech ` +
       `${TOOL_VERSION} and registry ${REGISTRY_VERSION}, and should observe the same ` +
       `serving-stack facts. Only the host is recorded here — no API key or auth header ` +
       `is included, so this receipt is safe to share.`,

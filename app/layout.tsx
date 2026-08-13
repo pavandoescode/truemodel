@@ -23,10 +23,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Provider Validator',
+  title: 'truemodel.tech',
   description:
     'Paste an endpoint and key to find out which model a provider actually serves, and whether it matches the one advertised.',
-  applicationName: 'Provider Validator',
+  applicationName: 'truemodel.tech',
   robots: { index: false, follow: false },
 };
 

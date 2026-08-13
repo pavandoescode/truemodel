@@ -28,7 +28,7 @@ import type { IdentityVerdict, SignalWeight } from '@/lib/types';
 import styles from './how-it-works.module.css';
 
 export const metadata: Metadata = {
-  title: 'How it works — Provider Validator',
+  title: 'How it works — truemodel.tech',
   description:
     'The method behind the verdicts: what counts as evidence, what each check measures, how the verdict is scored, and what this tool cannot prove.',
 };

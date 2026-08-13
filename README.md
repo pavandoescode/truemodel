@@ -1,10 +1,10 @@
-# TrueModel
+# truemodel.tech
 
 **Detect what's really behind a model ID.**
 
-TrueModel answers one question that model marketplaces and proxies rarely let you verify: **does this endpoint actually serve the model it claims to serve?**
+truemodel.tech answers one question that model marketplaces and proxies rarely let you verify: **does this endpoint actually serve the model it claims to serve?**
 
-Point it at any endpoint that speaks the Anthropic `/v1/messages` shape, paste a key, and TrueModel discovers the catalogue, tests each model with a live call, and probes what is *actually* running behind each id — without ever trusting what a model says about itself.
+Point it at any endpoint that speaks the Anthropic `/v1/messages` shape, paste a key, and truemodel.tech discovers the catalogue, tests each model with a live call, and probes what is *actually* running behind each id — without ever trusting what a model says about itself.
 
 ---
 
@@ -21,7 +21,7 @@ Point it at any endpoint that speaks the Anthropic `/v1/messages` shape, paste a
 - **Custom headers & saved profiles** — reuse provider configs across sessions.
 - **Write-back to your tools** — save passing models into Claude Code (`~/.claude/settings.json`) or OpenCode (`~/.opencode/config.json`), only when you ask.
 
-Your key is proxied through TrueModel's own server route, so it never goes to a third party and provider CORS rules don't apply. Nothing on your system is modified except the config files you explicitly choose to write.
+Your key is proxied through truemodel.tech's own server route, so it never goes to a third party and provider CORS rules don't apply. Nothing on your system is modified except the config files you explicitly choose to write.
 
 ## Tech Stack
 

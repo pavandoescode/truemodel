@@ -140,7 +140,7 @@ describe('buildReceiptMarkdown', () => {
 
   it('produces a valid receipt when no models were tested', () => {
     const md = buildReceiptMarkdown({ endpoint: 'https://api.example.com/v1', reports: [], at });
-    expect(md).toContain('# Provider Validator — Evidence Receipt');
+    expect(md).toContain('# truemodel.tech — Evidence Receipt');
     expect(md).toContain('Models tested: 0');
     expect(md).toContain('No models were tested');
   });
