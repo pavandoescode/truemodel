@@ -101,6 +101,7 @@ export interface ConnectionResult {
 
 export type ErrorCategory =
   | 'auth'
+  | 'forbidden'
   | 'rate-limit'
   | 'invalid-model'
   | 'invalid-request'
