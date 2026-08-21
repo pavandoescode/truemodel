@@ -47,6 +47,7 @@ function cleanReport(): IdentityReport {
       measuredCeiling: 32000,
       unvalidatedCeiling: false,
       candidateFamilies: ['Opus 4.1'],
+      rankedCandidates: [],
       advertised: null,
       claimedVendor: 'Anthropic',
       vendorMentions: ['Anthropic'],
@@ -54,6 +55,8 @@ function cleanReport(): IdentityReport {
       summary: 'Served model matches the advertised Anthropic Opus 4.1.',
     },
     fingerprint: null,
+    cutoff: null,
+    stylometry: null,
     error: null,
     at: 1_700_000_000_000,
   };
@@ -97,6 +100,7 @@ function mismatchReport(): IdentityReport {
       measuredCeiling: null,
       unvalidatedCeiling: true,
       candidateFamilies: [],
+      rankedCandidates: [],
       advertised: null,
       claimedVendor: 'Meta',
       vendorMentions: ['Meta'],
@@ -104,6 +108,8 @@ function mismatchReport(): IdentityReport {
       summary: 'Served model is Meta Llama 3.1, not the advertised Anthropic Opus 4.1.',
     },
     fingerprint: null,
+    cutoff: null,
+    stylometry: null,
     error: null,
     at: 1_700_000_000_000,
   };

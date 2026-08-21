@@ -41,8 +41,25 @@ produces as a side effect instead:
   over-cap `max_tokens` instead of silently clamping it.
 - **The tokenizer's count** for a fixed string, compared against the median of
   the other models on the same endpoint — not a hardcoded constant.
-- **Fixed puzzles with checkable answers**, run three times. Weighted lightly
-  for small/cheap tiers, which fail them legitimately.
+- **Fixed puzzles with checkable answers** (arithmetic, letter counting on a
+  nonce word, a one-line code expression, strict instruction constraints), run
+  three times and graded per run. Weighted lightly for small/cheap tiers,
+  which fail them legitimately.
+- **The knowledge horizon.** One extra request of dated trivia brackets when
+  the answering model was trained; a model that knows facts dated *after* the
+  advertised family's training window, or misses facts comfortably *inside*
+  it, is generational evidence. Two items must agree before it scores, and it
+  stays soft — cutoffs are published loosely.
+- **The writing-style fingerprint.** Zero extra requests: the probe answers
+  already collected are reduced to a style vector (sentence length, markdown
+  density, punctuation rates) and compared against the cohort median, the same
+  way the tokenizer count is. Corroborating evidence only.
+
+When a verdict doubts the label, the attribution block also ranks the
+**closest registry families** — a scored shortlist of which known families the
+measured evidence (enforced cap, vendor leaks, puzzle profile, knowledge
+horizon) actually fits. Scores are relative within the ranking, not
+probabilities.
 
 Verdicts run from *matches advertised* through *wrong tier* and *different
 vendor* to *mismatch*, with *ambiguous* when the endpoint gives nothing away.

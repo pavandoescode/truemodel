@@ -63,12 +63,14 @@ export async function POST(request: Request) {
       url,
       { method: 'POST', headers: upstreamHeaders, body: JSON.stringify(body) },
       timeoutMs,
+      // Re-validate every redirect hop, not just the first URL.
+      { guard: assertPublicTarget },
     );
 
     if (!outcome.response) {
       const error = classifyError({ status: null, message: outcome.networkError?.message ?? 'Request failed', provider });
       if (outcome.timedOut) error.category = 'timeout';
-      return errorStream(error, { url, sentHeaders, latencyMs: outcome.latencyMs });
+      return errorStream(error, { url, sentHeaders, latencyMs: outcome.latencyMs, redirects: outcome.redirects });
     }
 
     const res = outcome.response;
@@ -84,6 +86,7 @@ export async function POST(request: Request) {
         status: res.status,
         headers: responseHeaders,
         latencyMs: Date.now() - started,
+        redirects: outcome.redirects,
       });
     }
 
@@ -99,7 +102,14 @@ export async function POST(request: Request) {
         };
 
         push(
-          ndjson({ type: 'open', status: res.status, headers: responseHeaders, url, sentHeaders }),
+          ndjson({
+            type: 'open',
+            status: res.status,
+            headers: responseHeaders,
+            url,
+            sentHeaders,
+            redirects: outcome.redirects,
+          }),
         );
 
         const reader = upstream.getReader();
@@ -162,7 +172,7 @@ export async function POST(request: Request) {
 
 function errorStream(
   error: ReturnType<typeof classifyError>,
-  meta: { url?: string; sentHeaders?: Record<string, string>; status?: number; headers?: Record<string, string>; latencyMs?: number } = {},
+  meta: { url?: string; sentHeaders?: Record<string, string>; status?: number; headers?: Record<string, string>; latencyMs?: number; redirects?: { from: string; to: string; status: number; authDropped?: boolean }[] } = {},
 ) {
   const lines =
     ndjson({
@@ -171,6 +181,7 @@ function errorStream(
       headers: meta.headers ?? {},
       url: meta.url ?? '',
       sentHeaders: meta.sentHeaders ?? {},
+      redirects: meta.redirects ?? [],
     }) +
     ndjson({ type: 'error', error }) +
     ndjson({ type: 'done', usage: null, stopReason: null, latencyMs: meta.latencyMs ?? 0, eventCount: 0 });

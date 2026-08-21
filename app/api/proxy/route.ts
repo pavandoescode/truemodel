@@ -58,6 +58,8 @@ export async function POST(request: Request) {
       url,
       { method, headers, body: method === 'POST' ? JSON.stringify(payload.body ?? {}) : undefined },
       timeoutMs,
+      // Re-validate every redirect hop, not just the first URL.
+      { guard: assertPublicTarget },
     );
 
     if (!outcome.response) {
@@ -80,6 +82,7 @@ export async function POST(request: Request) {
           error,
           url,
           sentHeaders,
+          redirects: outcome.redirects,
         } satisfies ProxyResponse,
         { status: 200 },
       );
@@ -112,13 +115,14 @@ export async function POST(request: Request) {
       error,
       url,
       sentHeaders,
+      redirects: outcome.redirects,
     };
     return NextResponse.json(body, { status: 200 });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     const status = err instanceof ConfigError ? 400 : 500;
     return NextResponse.json(
-      { ...fail(0, message), url, sentHeaders, error: classifyError({ status: null, message }) },
+      { ...fail(0, message), url, sentHeaders, redirects: [], error: classifyError({ status: null, message }) },
       { status },
     );
   }
@@ -136,5 +140,6 @@ function fail(status: number, message: string): ProxyResponse {
     error: classifyError({ status: null, message }),
     url: '',
     sentHeaders: {},
+    redirects: [],
   };
 }

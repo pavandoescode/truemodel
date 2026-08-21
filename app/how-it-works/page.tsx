@@ -4,12 +4,14 @@ import Link from 'next/link';
 import {
   Ban,
   Braces,
+  CalendarClock,
   ChevronLeft,
   Dices,
   FileText,
   Hash,
   Layers,
   ListChecks,
+  PenLine,
   Quote,
   Repeat,
   Route,
@@ -57,7 +59,7 @@ const TIERS: readonly Tier[] = [
     rankLabel: 'Real but conditional',
     name: 'Measurable behaviour',
     body:
-      'Tokenizer counts for a fixed string, the output cap the API actually enforces, whether the same prompt returns the same text at temperature 0. Genuine evidence, but only where the published limits are exact and there is a reference to compare against.',
+      'Tokenizer counts for a fixed string, the output cap the API actually enforces, whether the same prompt returns the same text at temperature 0, which dated facts it reliably knows, how it habitually formats a reply. Genuine evidence, but only where the published limits are exact and there is a reference to compare against.',
   },
   {
     rank: 'never',
@@ -72,7 +74,7 @@ const RUN_STEPS: readonly { title: string; body: ReactNode }[] = [
   {
     title: 'Three identical runs at temperature 0',
     body:
-      'The same five-item probe is sent three times with temperature 0 and a 512-token cap. Fixing the prompt makes the runs comparable to each other and to every other model on the same endpoint; three of them separate a stable backend from a load balancer spreading requests across different models.',
+      'The same eight-item probe is sent three times with temperature 0 and a 512-token cap. Fixing the prompt makes the runs comparable to each other and to every other model on the same endpoint; three of them separate a stable backend from a load balancer spreading requests across different models.',
   },
   {
     title: 'The tokenizer is measured against its own cohort',
@@ -117,8 +119,42 @@ const RUN_STEPS: readonly { title: string; body: ReactNode }[] = [
   },
   {
     title: 'The identity question is asked again, sideways',
-    body:
-      'A second request asks which company trained it, what its family and version number are, and asks it to complete “the underlying model serving this request is ___”. Phrasings a spoofing system prompt tends not to anticipate. Whatever comes back is quoted for you verbatim and never converted into a claim — if the answers name more than one vendor across runs, that inconsistency is itself reported as a finding.',
+    body: (
+      <>
+        A second request asks which company trained it, what its family and version number are, and asks it to
+        complete “the underlying model serving this request is ___”. Phrasings a spoofing system prompt tends not
+        to anticipate. Whatever comes back is quoted for you verbatim and never converted into a claim — if the
+        answers name more than one vendor across runs, that inconsistency is itself reported as a finding.
+        Everything measured — the enforced cap, the vendor evidence, the capability profile, the knowledge
+        horizon — is then pooled into a ranked <strong>“closest registry families”</strong> shortlist, which
+        answers the follow-up question every mismatch raises: if this is not the model sold, what is the closest
+        thing it could be? Those scores are relative within the ranking, not probabilities.
+      </>
+    ),
+  },
+  {
+    title: 'Its knowledge horizon is bracketed with dated trivia',
+    body: (
+      <>
+        One extra request asks six questions whose answers became knowable on known dates between 2023 and 2025.
+        A model cannot know events from after its training data was collected — no system prompt can install the
+        winner of an election the weights never saw — so which facts it reliably knows brackets when it was
+        trained, and that bracket is compared against the advertised family’s window in the model registry. Two
+        items must point the same way before this scores at all.
+      </>
+    ),
+  },
+  {
+    title: 'Its writing style is compared against its siblings, for free',
+    body: (
+      <>
+        After every model has been probed, the answers already collected are reduced to a style vector — sentence
+        length, markdown density, dash and ellipsis rates. Families have stable writing habits, and a substituted
+        backend still writes like itself, so each model’s vector is compared against the median of its cohort on
+        the same endpoint, with the “too different” bar learned from the cohort’s own spread. Zero extra requests:
+        the text was already on its way back from the identity runs.
+      </>
+    ),
   },
   {
     title: 'Optionally, its “random” numbers are sampled and compared',
@@ -184,8 +220,38 @@ const SIGNALS: readonly SignalDoc[] = [
     Icon: Sigma,
     name: 'Arithmetic, letter counting, code generation',
     weight: 'hard',
+    body: (
+      <>
+        Five questions with exactly one right answer each (17 × 24, the r’s in “strawberry”, the one-line Python
+        sum of 1–100, 847 × 36, and the r’s in “retrospectrometer”), chosen because they can be graded without a
+        reference model. The class of 2026 was specifically tuned on the famous items — strawberry counts and
+        small products now appear in training data — so the nonce word and the larger product restore the tier
+        separation the original three have started to lose. Each is graded per run and downgraded to soft for
+        small tiers and ids not in the registry: a genuine Haiku really does miscount letters, and failing one
+        for that would be a false accusation.
+      </>
+    ),
+  },
+  {
+    Icon: CalendarClock,
+    name: 'Knowledge horizon',
+    weight: 'soft',
+    body: (
+      <>
+        Six dated-trivia questions, one request. A model correctly answering two or more facts dated{' '}
+        <em>after</em> the advertised family’s training window knows things that family cannot know — no system
+        prompt can install a fact the weights never saw. Missing two or more facts comfortably <em>inside</em>{' '}
+        the window suggests an earlier generation. Soft because cutoffs are announced loosely and revised
+        quietly, and one item off in either direction is recorded but never scored.
+      </>
+    ),
+  },
+  {
+    Icon: PenLine,
+    name: 'Writing style vs siblings',
+    weight: 'soft',
     body:
-      'Three questions with exactly one right answer each (17 × 24, the r’s in “strawberry”, the one-line Python sum of 1–100), chosen because they can be graded without a reference model. Downgraded to soft for small tiers and for ids not in the registry: a genuine Haiku really does miscount the r’s, and failing one for that would be a false accusation.',
+      'A style vector — sentence length, markdown density, dash and ellipsis rates — computed from answers the runs already collected, so it costs no extra requests. Compared against the cohort median with a threshold learned from the cohort’s own spread, exactly like the random-number fingerprint. The probe’s rigid numbered format mutes individual style, which is why this is deliberately weak-but-cheap corroborating evidence.',
   },
   {
     Icon: ListChecks,
@@ -193,8 +259,10 @@ const SIGNALS: readonly SignalDoc[] = [
     weight: 'soft',
     body: (
       <>
-        Whether every run replied with exactly <code>ORANGE</code> where the probe demanded that single word
-        and nothing else.
+        Two constraints, both graded per run: reply with exactly <code>ORANGE</code> where the probe demanded
+        that single word, and reply with exactly seven words where it demanded a length. Counting one’s own
+        output is a stricter instruction-following test than echoing a fixed word — it trips models that
+        pattern-match the prompt instead of obeying it.
       </>
     ),
   },
@@ -337,7 +405,12 @@ const LIMITS: readonly { title: string; body: ReactNode }[] = [
   },
   {
     title: 'The model table is hand-maintained',
-    body: `Advertised context windows, output caps and vendor mappings come from a registry in this repository (version ${REGISTRY_VERSION}). A model released after that date can be reported as an unrecognised id, which downgrades the puzzles to unscored and leaves nothing to compare a ceiling against.`,
+    body: `Advertised context windows, output caps, approximate training-cutoff windows and vendor mappings come from a registry in this repository (version ${REGISTRY_VERSION}). A model released after that date can be reported as an unrecognised id, which downgrades the puzzles to unscored and leaves nothing to compare a ceiling or a knowledge horizon against.`,
+  },
+  {
+    title: 'Cutoff windows are windows, not dates',
+    body:
+      'Vendors announce training cutoffs loosely and revise them quietly, so the registry stores each family’s cutoff as a month range and the knowledge-horizon check requires two items to agree before it scores. A single dated fact either side of the window is recorded as evidence and never scored — one trivia answer can be guessed, and one knowledge hole is Tuesday for a real model.',
   },
 ];
 
@@ -376,9 +449,10 @@ export default function HowItWorksPage() {
           <p className={styles.prose}>
             Nothing here trusts what a model says about itself. What cannot be faked cheaply is the serving
             stack&apos;s own bookkeeping: the model id on the response, the id named in a validation error, the
-            tokenizer&apos;s count for a fixed string, the output cap the API enforces. Those decide the
-            verdicts. A model&apos;s claims about itself are kept as quotes for you to read, and are scored in
-            exactly one case — when they contradict the vendor being advertised.
+            tokenizer&apos;s count for a fixed string, the output cap the API enforces. And one thing the model
+            itself cannot fake in the other direction: knowledge of events from after its training data was
+            collected. Those decide the verdicts. A model&apos;s claims about itself are kept as quotes for you
+            to read, and are scored in exactly one case — when they contradict the vendor being advertised.
           </p>
           <ul className={styles.tiers}>
             {TIERS.map((tier) => (
@@ -399,8 +473,9 @@ export default function HowItWorksPage() {
               <Layers size={18} aria-hidden="true" /> What happens when you press Identify
             </h2>
             <p className={styles.prose}>
-              Up to eight things, per selected model. The last is opt-in; any of the rest can come back skipped —
-              an endpoint that refuses a probe leaves that check unscored rather than counted against the model.
+              Up to ten things, per selected model. The random-number sampling is opt-in; any of the rest can
+              come back skipped — an endpoint that refuses a probe leaves that check unscored rather than
+              counted against the model.
             </p>
           </div>
           <ol className={styles.steps}>
@@ -503,8 +578,10 @@ export default function HowItWorksPage() {
             </h2>
           </div>
           <p className={styles.prose}>
-            Every run can be exported as a receipt: the verdict, every signal with its status and weight, the
-            raw evidence behind it, and the model-table version that produced it, in Markdown with embedded
+            Every run can be exported as a receipt: the verdict with its confidence, every signal with its
+            status and weight, the raw evidence behind it — tokenizer counts, the measured ceiling, the
+            knowledge horizon, the writing-style deviation — the closest-families shortlist when attribution
+            ran, and the model-table version that produced it, in Markdown with embedded
             JSON. It records the endpoint&apos;s host only — never your API key — so it can be attached to a
             support ticket or a dispute as-is. Your key is proxied server-side and is written to disk only if
             you explicitly ask this tool to generate a CLI config for you.

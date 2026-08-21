@@ -5,12 +5,15 @@ import {
   extractModelIds,
   familiesWithCeiling,
   expectedLimits,
+  monthLabel,
+  monthNum,
   nonexistentIdFor,
   vendorOf,
+  MODEL_SPECS,
   type VendorId,
 } from '@/lib/registry';
 import { OUTPUT_BANDS } from '@/lib/registry';
-import type { EngineOptions } from '@/lib/types';
+import type { EngineOptions, FamilyCandidate } from '@/lib/types';
 
 /**
  * Attribution — answering "which model is actually answering?"
@@ -379,4 +382,129 @@ export async function probeVendor(
     .filter((b) => b.type === 'text' && typeof b.text === 'string')
     .map((b) => b.text)
     .join('\n');
+}
+
+/* ------------------------------------------------------------------ */
+/* Ranked family candidates                                            */
+/* ------------------------------------------------------------------ */
+
+export interface RankCandidatesInput {
+  /** The id that was requested — its own family competes in the ranking too. */
+  requestedId: string;
+  /** Enforced output ceiling, when one was measured. */
+  measuredCeiling: number | null;
+  /** False when the endpoint enforced no limit, making the ceiling meaningless. */
+  ceilingValidated: boolean;
+  /** Vendor the serving stack itself named, when it leaked one. Strong. */
+  vendorHint: VendorId | null;
+  /** Vendor the model named for itself. Weak — one line of system prompt. */
+  claimedVendorId: VendorId | null;
+  /** True when every puzzle passed, false when any failed, null when none scored. */
+  acedPuzzles: boolean | null;
+  /** Latest-dated fact the model reliably knows, as an absolute month number. */
+  knownThrough: number | null;
+}
+
+/**
+ * Rank registry families by how well everything measured fits them.
+ *
+ * This answers the user's real follow-up question — "if this isn't Opus 5,
+ * what is the closest thing it could be?" — without pretending to certainty:
+ * scores are relative within the ranking, not probabilities, and each
+ * candidate carries the plain reasons it scored. Where the serving stack named
+ * a vendor, families from other vendors are excluded outright; everything
+ * else is additive evidence, strongest first (a matching enforced cap is
+ * worth more than what the model says about itself, same hierarchy as the
+ * rest of the tool).
+ *
+ * Pure function over registry data and measured facts, so it is fully
+ * unit-testable. Deprecated families are kept — resellers serving last year's
+ * model behind this year's label is exactly the case being ranked — with a
+ * small penalty so current families win ties.
+ */
+export function rankFamilyCandidates(input: RankCandidatesInput): FamilyCandidate[] {
+  const hasAnyEvidence =
+    input.measuredCeiling !== null ||
+    !!input.vendorHint ||
+    !!input.claimedVendorId ||
+    input.acedPuzzles !== null ||
+    input.knownThrough !== null;
+  if (!hasAnyEvidence) return [];
+
+  const scored: { spec: (typeof MODEL_SPECS)[number]; score: number; why: string[] }[] = [];
+  for (const spec of MODEL_SPECS) {
+    let score = 0;
+    const why: string[] = [];
+
+    if (input.measuredCeiling !== null && input.ceilingValidated) {
+      if (spec.output === input.measuredCeiling) {
+        score += 40;
+        why.push(`enforced output cap matches ${spec.output.toLocaleString('en-US')}`);
+      } else {
+        // A non-matching cap is weakly negative: clamping vendors can differ
+        // from the published figure without anything being substituted.
+        score += 5;
+      }
+    } else {
+      score += 10; // no ceiling measured — nothing to separate on
+    }
+
+    if (input.vendorHint) {
+      if (spec.vendor !== input.vendorHint) continue; // excluded outright
+      score += 25;
+      why.push(`the serving stack named ${VENDOR_LABEL[spec.vendor]}`);
+    } else if (input.claimedVendorId) {
+      if (spec.vendor === input.claimedVendorId) {
+        score += 15;
+        why.push(`the model calls itself ${VENDOR_LABEL[spec.vendor]}`);
+      }
+    } else {
+      score += 8;
+    }
+
+    if (input.knownThrough !== null) {
+      const from = spec.cutoffFrom ? monthNum(spec.cutoffFrom) : null;
+      const to = spec.cutoffTo ? monthNum(spec.cutoffTo) : null;
+      if (from !== null && to !== null) {
+        if (input.knownThrough > to + 6) {
+          // Knows far more than this family's data could contain — the family
+          // cannot be it, but ranking is not accusation, so it just gets zero.
+        } else if (input.knownThrough >= from) {
+          score += 20;
+          why.push(`knowledge through ${monthLabel(input.knownThrough)} fits its ${spec.cutoffFrom}…${spec.cutoffTo} cutoff`);
+        } else if (input.knownThrough >= from - 6) {
+          score += 15;
+        } else {
+          score += 5;
+        }
+      } else {
+        score += 8;
+      }
+    }
+
+    if (input.acedPuzzles !== null) {
+      if (input.acedPuzzles && spec.small !== true) {
+        score += 15;
+        why.push('aces the reasoning puzzles, unlike a small tier');
+      } else if (!input.acedPuzzles && spec.small === true) {
+        score += 15;
+        why.push('misses the puzzles the way a small tier does');
+      }
+    } else {
+      score += 8;
+    }
+
+    if (spec.deprecated) score -= 5;
+
+    if (score > 0) scored.push({ spec, score, why });
+  }
+
+  scored.sort((a, b) => b.score - a.score);
+  const top = scored[0]?.score ?? 1;
+  return scored.slice(0, 3).map(({ spec, score, why }) => ({
+    family: spec.family,
+    vendor: VENDOR_LABEL[spec.vendor],
+    score: Math.max(1, Math.round((100 * score) / top)),
+    why: why.slice(0, 3),
+  }));
 }

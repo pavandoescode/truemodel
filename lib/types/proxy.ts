@@ -17,6 +17,19 @@ export interface ProxyRequest {
   query?: Record<string, string>;
 }
 
+/**
+ * One redirect hop the server followed on a request: where the request was
+ * sent, where the server pointed it, with what status. `authDropped` marks
+ * hops to a different host, where credential headers are deliberately not
+ * forwarded — a redirect that changes domain must not carry the API key along.
+ */
+export interface RedirectHop {
+  from: string;
+  to: string;
+  status: number;
+  authDropped?: boolean;
+}
+
 export interface ProxyResponse<T = unknown> {
   ok: boolean;
   status: number;
@@ -29,11 +42,13 @@ export interface ProxyResponse<T = unknown> {
   url: string;
   /** Request headers actually sent upstream, secrets already masked. */
   sentHeaders: Record<string, string>;
+  /** Redirect hops followed before the response, oldest first. */
+  redirects?: RedirectHop[];
 }
 
 /** One line of the NDJSON envelope emitted by `POST /api/stream`. */
 export type StreamEnvelope =
-  | { type: 'open'; status: number; headers: Record<string, string>; url: string; sentHeaders: Record<string, string> }
+  | { type: 'open'; status: number; headers: Record<string, string>; url: string; sentHeaders: Record<string, string>; redirects?: RedirectHop[] }
   | { type: 'delta'; text: string }
   | { type: 'event'; event: string; data: unknown }
   | { type: 'toolUse'; id: string; name: string; input: unknown }
