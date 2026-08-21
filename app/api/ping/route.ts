@@ -3,6 +3,7 @@ import { classifyError } from '@/lib/errors';
 import { assertPublicTarget } from '@/lib/server/guard';
 import { checkRateLimit, rateLimitHeaders } from '@/lib/server/rateLimit';
 import { ConfigError, buildUrl, collectHeaders, parseWireConfig, timedFetch } from '@/lib/server/upstream';
+import type { RedirectHop } from '@/lib/types';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -14,6 +15,8 @@ export interface PingResult {
   headers: Record<string, string>;
   url: string;
   message: string;
+  /** Redirect hops followed before the response, oldest first. */
+  redirects?: RedirectHop[];
 }
 
 /**
@@ -45,7 +48,12 @@ export async function POST(request: Request) {
 
     await assertPublicTarget(url);
 
-    const outcome = await timedFetch(url, { method: 'GET', headers: { accept: '*/*' } }, timeoutMs);
+    const outcome = await timedFetch(
+      url,
+      { method: 'GET', headers: { accept: '*/*' } },
+      timeoutMs,
+      { guard: assertPublicTarget },
+    );
 
     if (!outcome.response) {
       return NextResponse.json(
@@ -56,6 +64,7 @@ export async function POST(request: Request) {
           headers: {},
           url,
           message: outcome.networkError?.message ?? 'Host unreachable',
+          redirects: outcome.redirects,
         } satisfies PingResult,
         { status: 200 },
       );
@@ -69,6 +78,7 @@ export async function POST(request: Request) {
         headers: collectHeaders(outcome.response.headers),
         url,
         message: `Host responded with ${outcome.response.status}`,
+        redirects: outcome.redirects,
       } satisfies PingResult,
       { status: 200 },
     );

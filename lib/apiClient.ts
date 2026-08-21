@@ -1,4 +1,5 @@
 import { classifyError } from '@/lib/errors';
+import { beginTrace, completeTrace, patchTrace } from '@/lib/requestTrace';
 import type {
   MessagesRequest,
   MessagesResponse,
@@ -9,6 +10,16 @@ import type {
   StreamOutcome,
   WireConfig,
 } from '@/lib/types';
+
+/** Enough of the response body to recognise it in the trace without flooding the panel. */
+const PREVIEW_CHARS = 280;
+
+/** The model id a request body names, for labelling traces. */
+function modelOf(body: unknown): string | null {
+  return typeof body === 'object' && body !== null && typeof (body as { model?: unknown }).model === 'string'
+    ? (body as { model: string }).model
+    : null;
+}
 
 /** Flatten the editable config into the wire shape our routes expect. */
 export function toWireConfig(config: ProviderConfig | WireConfig): WireConfig {
@@ -41,6 +52,12 @@ export interface ProxyOptions {
 /** Single round trip through our server proxy. Never throws. */
 export async function proxy<T = unknown>(opts: ProxyOptions): Promise<ProxyResponse<T>> {
   const started = performance.now();
+  const trace = beginTrace({
+    kind: 'proxy',
+    method: opts.method ?? 'GET',
+    path: opts.path,
+    model: modelOf(opts.body),
+  });
   try {
     const res = await fetch('/api/proxy', {
       method: 'POST',
@@ -57,10 +74,27 @@ export async function proxy<T = unknown>(opts: ProxyOptions): Promise<ProxyRespo
       }),
     });
     const json = (await res.json()) as ProxyResponse<T>;
+    completeTrace(trace.id, {
+      clientTotalMs: Math.round(performance.now() - started),
+      upstreamUrl: json.url || null,
+      sentHeaders: json.sentHeaders,
+      upstreamStatus: json.status,
+      upstreamMs: json.latencyMs,
+      responseHeaders: json.headers,
+      ok: json.ok,
+      error: json.error,
+      preview: json.rawText ? json.rawText.slice(0, PREVIEW_CHARS) : null,
+      redirectChain: json.redirects ?? null,
+    });
     return json;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     const aborted = err instanceof Error && err.name === 'AbortError';
+    completeTrace(trace.id, {
+      clientTotalMs: Math.round(performance.now() - started),
+      ok: false,
+      error: classifyError({ status: null, message: aborted ? 'Cancelled by user.' : message }),
+    });
     return {
       ok: false,
       status: 0,
@@ -101,6 +135,8 @@ export interface StreamOptions {
 /** Consume the NDJSON envelope stream, measuring TTFT client-side. */
 export async function streamMessages(opts: StreamOptions): Promise<StreamOutcome> {
   const started = performance.now();
+  const path = opts.path ?? '/v1/messages';
+  const trace = beginTrace({ kind: 'stream', method: 'POST', path, model: modelOf(opts.body) });
   const outcome: StreamOutcome = {
     ok: false,
     status: 0,
@@ -117,6 +153,19 @@ export async function streamMessages(opts: StreamOptions): Promise<StreamOutcome
     error: null,
   };
 
+  const finishTrace = () => {
+    completeTrace(trace.id, {
+      clientTotalMs: Math.round(performance.now() - started),
+      upstreamMs: outcome.latencyMs || null,
+      upstreamStatus: outcome.status || null,
+      ok: !outcome.error && outcome.status > 0 && outcome.status < 400,
+      error: outcome.error,
+      usage: outcome.usage,
+      eventCount: outcome.eventCount || null,
+      preview: outcome.text ? outcome.text.slice(0, PREVIEW_CHARS) : null,
+    });
+  };
+
   try {
     const res = await fetch('/api/stream', {
       method: 'POST',
@@ -124,7 +173,7 @@ export async function streamMessages(opts: StreamOptions): Promise<StreamOutcome
       signal: opts.signal,
       body: JSON.stringify({
         config: toWireConfig(opts.config),
-        path: opts.path ?? '/v1/messages',
+        path,
         body: { ...opts.body, stream: true },
         timeoutMs: opts.timeoutMs,
         provider: opts.provider ?? null,
@@ -134,6 +183,7 @@ export async function streamMessages(opts: StreamOptions): Promise<StreamOutcome
     if (!res.body) {
       outcome.error = classifyError({ status: res.status, message: 'Stream response had no body.' });
       outcome.latencyMs = Math.round(performance.now() - started);
+      finishTrace();
       return outcome;
     }
 
@@ -149,10 +199,10 @@ export async function streamMessages(opts: StreamOptions): Promise<StreamOutcome
       while ((idx = buffer.indexOf('\n')) !== -1) {
         const line = buffer.slice(0, idx).trim();
         buffer = buffer.slice(idx + 1);
-        if (line) applyEnvelope(outcome, line, started, opts);
+        if (line) applyEnvelope(outcome, line, started, opts, trace.id);
       }
     }
-    if (buffer.trim()) applyEnvelope(outcome, buffer.trim(), started, opts);
+    if (buffer.trim()) applyEnvelope(outcome, buffer.trim(), started, opts, trace.id);
   } catch (err) {
     const aborted = err instanceof Error && err.name === 'AbortError';
     outcome.error = classifyError({
@@ -163,10 +213,11 @@ export async function streamMessages(opts: StreamOptions): Promise<StreamOutcome
 
   outcome.latencyMs = outcome.latencyMs || Math.round(performance.now() - started);
   outcome.ok = !outcome.error && outcome.status > 0 && outcome.status < 400;
+  finishTrace();
   return outcome;
 }
 
-function applyEnvelope(outcome: StreamOutcome, line: string, started: number, opts: StreamOptions) {
+function applyEnvelope(outcome: StreamOutcome, line: string, started: number, opts: StreamOptions, traceId: number) {
   let env: StreamEnvelope;
   try {
     env = JSON.parse(line) as StreamEnvelope;
@@ -178,6 +229,15 @@ function applyEnvelope(outcome: StreamOutcome, line: string, started: number, op
       outcome.status = env.status;
       outcome.headers = env.headers;
       outcome.sentHeaders = env.sentHeaders;
+      // The route names where it actually sent the request — the fact the
+      // whole trace panel exists to show.
+      patchTrace(traceId, {
+        upstreamUrl: env.url || null,
+        sentHeaders: env.sentHeaders,
+        upstreamStatus: env.status,
+        responseHeaders: env.headers,
+        redirectChain: env.redirects ?? null,
+      });
       break;
     case 'delta':
       if (outcome.ttftMs === null) outcome.ttftMs = Math.round(performance.now() - started);
@@ -209,21 +269,47 @@ export async function ping(config: ProviderConfig | WireConfig, path = '/'): Pro
   status: number | null;
   headers: Record<string, string>;
   message: string;
+  redirects?: { from: string; to: string; status: number; authDropped?: boolean }[];
 }> {
+  const started = performance.now();
+  const trace = beginTrace({ kind: 'ping', method: 'GET', path });
   try {
     const res = await fetch('/api/ping', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ config: toWireConfig(config), path }),
     });
-    return (await res.json()) as never;
+    const json = (await res.json()) as {
+      reachable: boolean;
+      latencyMs: number;
+      status: number | null;
+      headers: Record<string, string>;
+      message: string;
+      redirects?: { from: string; to: string; status: number; authDropped?: boolean }[];
+    };
+    completeTrace(trace.id, {
+      clientTotalMs: Math.round(performance.now() - started),
+      upstreamMs: json.latencyMs,
+      upstreamStatus: json.status,
+      responseHeaders: json.headers,
+      ok: json.reachable,
+      preview: json.message ? json.message.slice(0, PREVIEW_CHARS) : null,
+      redirectChain: json.redirects ?? null,
+    });
+    return json;
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    completeTrace(trace.id, {
+      clientTotalMs: Math.round(performance.now() - started),
+      ok: false,
+      error: classifyError({ status: null, message }),
+    });
     return {
       reachable: false,
       latencyMs: 0,
       status: null,
       headers: {},
-      message: err instanceof Error ? err.message : String(err),
+      message,
     };
   }
 }

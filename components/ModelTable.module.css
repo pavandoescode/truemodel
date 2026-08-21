@@ -348,6 +348,85 @@
   line-height: var(--lh-normal);
 }
 
+/* ---------- ranked "closest families" ---------- */
+
+.candidateList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+}
+
+.candidate {
+  color: var(--fg);
+  line-height: var(--lh-normal);
+  font-size: var(--t-caption);
+}
+
+/* The relative score reads as a number first, so it stays tnum and bold. */
+.candidateScore {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.candidateWhy {
+  color: var(--fg-muted);
+}
+
+/* Flagging the family that was actually sold keeps the ranking honest: if the
+   top candidate is the advertised one, that reads as reassurance, not finding. */
+.candidateAdvertised {
+  color: var(--color-success);
+  font-weight: 600;
+}
+
+/* ---------- evidence meters ---------- */
+
+/* Tiny two-value comparison bars under a signal's detail line. Values are
+   labelled with words too — the bar is a glance aid, not the only channel. */
+.meterList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  margin-top: var(--s-2);
+}
+
+.meterRow {
+  display: grid;
+  grid-template-columns: max-content 1fr max-content;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--t-caption);
+  color: var(--fg-muted);
+}
+
+.meterTrack {
+  position: relative;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg-surface-3, rgba(127, 127, 127, 0.15));
+  overflow: hidden;
+}
+
+.meterFill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 3px;
+  background: var(--color-accent);
+  opacity: 0.85;
+}
+
+.meterFillAlt {
+  background: var(--fg-subtle);
+  opacity: 0.6;
+}
+
+.meterValue {
+  font-variant-numeric: tabular-nums;
+}
+
 /* ---------- response accordion ---------- */
 .accordion {
   /* Sits at the foot of the card, beneath the readings row. */

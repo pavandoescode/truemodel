@@ -6,6 +6,7 @@ import {
   familiesWithCeiling,
   OUTPUT_BANDS,
   parseLimitError,
+  rankFamilyCandidates,
   scanHeadersForModel,
 } from '@/lib/attribution';
 import { attributionSignals, attributionSummary, resolveServedModel } from '@/lib/identity';
@@ -230,6 +231,7 @@ const base: Attribution = {
   measuredCeiling: null,
   unvalidatedCeiling: false,
   candidateFamilies: [],
+  rankedCandidates: [],
   advertised: { vendor: 'Anthropic', family: 'Opus 5', output: 128_000, context: 1_000_000, capsExact: true },
   claimedVendor: null,
   vendorMentions: [],
@@ -440,3 +442,60 @@ describe('attributionSignals', () => {
 });
 
 
+
+describe('rankFamilyCandidates', () => {
+  const baseInput = {
+    requestedId: 'claude-opus-5',
+    measuredCeiling: null as number | null,
+    ceilingValidated: true,
+    vendorHint: null,
+    claimedVendorId: null,
+    acedPuzzles: null as boolean | null,
+    knownThrough: null as number | null,
+  };
+
+  it('returns nothing when no evidence was measured at all', () => {
+    expect(rankFamilyCandidates(baseInput)).toEqual([]);
+  });
+
+  it('ranks families whose enforced cap matches above the rest', () => {
+    const ranked = rankFamilyCandidates({ ...baseInput, measuredCeiling: 128_000 });
+    expect(ranked.length).toBeGreaterThan(0);
+    expect(ranked[0]!.score).toBe(100);
+    // Every top candidate shares the measured cap.
+    expect(['Opus 5', 'Sonnet 5', 'Fable 5', 'Mythos 5', 'GPT-5.2', 'GPT-5.1', 'GLM-4']).toContain(ranked[0]!.family);
+    expect(ranked[0]!.why.some((w) => w.includes('output cap matches'))).toBe(true);
+  });
+
+  it('excludes other vendors outright when the serving stack named one', () => {
+    const ranked = rankFamilyCandidates({ ...baseInput, vendorHint: 'openai', claimedVendorId: 'openai' });
+    expect(ranked.length).toBeGreaterThan(0);
+    expect(ranked.every((c) => c.vendor === 'OpenAI')).toBe(true);
+  });
+
+  it('rewards a knowledge horizon that fits the family window', () => {
+    const withCeiling = rankFamilyCandidates({ ...baseInput, measuredCeiling: 128_000 });
+    const withCutoff = rankFamilyCandidates({
+      ...baseInput,
+      measuredCeiling: 128_000,
+      // Knows through 2025-04: fits Opus 5's 2026 window, not any 2021 family.
+      knownThrough: 2025 * 12 + 3,
+    });
+    const scoreOf = (r: typeof withCutoff, family: string) => r.find((c) => c.family === family)?.score ?? 0;
+    // GPT-3.5's window ends 2021-12; a model knowing 2025-04 cannot be it, so
+    // its score must fall relative to the same ranking without the horizon.
+    expect(scoreOf(withCutoff, 'GPT-3.5')).toBeLessThanOrEqual(scoreOf(withCeiling, 'GPT-3.5'));
+  });
+
+  it('boosts small tiers when the puzzles were missed', () => {
+    const missed = rankFamilyCandidates({ ...baseInput, measuredCeiling: 64_000, acedPuzzles: false });
+    const top = missed[0]!;
+    expect(top.why.some((w) => w.includes('small tier'))).toBe(true);
+  });
+
+  it('keeps scores relative: the top candidate is always 100', () => {
+    const ranked = rankFamilyCandidates({ ...baseInput, measuredCeiling: 32_768, acedPuzzles: true });
+    expect(ranked[0]!.score).toBe(100);
+    expect(ranked.every((c) => c.score >= 1 && c.score <= 100)).toBe(true);
+  });
+});

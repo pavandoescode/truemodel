@@ -52,6 +52,11 @@ export function IdentityPill({
     >
       <Icon size={13} aria-hidden="true" />
       <span>{label}</span>
+      {/* A visible number, not just a tooltip: "82%" reads as "probably",
+          "40%" reads as "weak", and that difference belongs on the row. */}
+      {typeof confidence === 'number' && confidence > 0 && (
+        <span className={styles.pillConfidence}>{confidence}%</span>
+      )}
     </span>
   );
 }

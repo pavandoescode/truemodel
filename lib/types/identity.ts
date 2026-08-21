@@ -32,7 +32,10 @@ export type IdentitySignalId =
   | 'puzzle-arithmetic'
   | 'puzzle-strawberry'
   | 'puzzle-python-sum'
+  | 'puzzle-hard-arithmetic'
+  | 'puzzle-nonce-count'
   | 'instruction-following'
+  | 'format-constraint'
   | 'response-id-shape'
   | 'tokenizer-fingerprint'
   | 'consistency-check'
@@ -46,7 +49,11 @@ export type IdentitySignalId =
   /** Extra input tokens the endpoint billed beyond the request — a hidden preamble. */
   | 'system-prompt-injection'
   /** Divergence of the model's "random number" distribution from a baseline. */
-  | 'random-number-fingerprint';
+  | 'random-number-fingerprint'
+  /** Knowledge horizon versus the advertised family's training-cutoff window. */
+  | 'knowledge-cutoff'
+  /** Writing-style divergence from the cohort, measured on answers already collected. */
+  | 'style-fingerprint';
 
 /**
  * How much a signal is allowed to move the verdict.
@@ -140,6 +147,13 @@ export interface Attribution {
   unvalidatedCeiling: boolean;
   /** Families whose published cap matches the measured ceiling. */
   candidateFamilies: string[];
+  /**
+   * Registry families ranked by how well everything measured — ceiling, vendor
+   * evidence, capability profile, knowledge horizon — fits them. Answers "if
+   * this is not the model sold, what is the closest thing it could be?".
+   * Scores are relative within the ranking, not absolute probabilities.
+   */
+  rankedCandidates: FamilyCandidate[];
   /** What the advertised id claims, when the id is recognised. */
   advertised: AdvertisedModel | null;
 
@@ -152,6 +166,40 @@ export interface Attribution {
 
   /** Plain-language conclusion, always naming the served model when known. */
   summary: string;
+}
+
+/** One registry family in the ranked "closest match" list. */
+export interface FamilyCandidate {
+  family: string;
+  /** Display vendor label, e.g. "Anthropic". */
+  vendor: string;
+  /** 0–100, relative within this ranking (top candidate is 100). */
+  score: number;
+  /** Short human-readable reasons this family scored as it did. */
+  why: string[];
+}
+
+/**
+ * Result of the knowledge-cutoff probe: one batched request of dated trivia.
+ *
+ * A model cannot know events from after its training data was collected, so
+ * which dated facts it reliably knows brackets when its weights were trained.
+ * Compared against the advertised family's registry window, that bracket is
+ * soft generational evidence — newer, older, or consistent.
+ */
+export interface KnowledgeCutoffResult {
+  /** Answers extracted per question, '' where the model skipped the item. */
+  answers: string[];
+  /** How many questions were answered correctly. */
+  correct: number;
+  /** Latest-dated question answered correctly, as an absolute month number. */
+  knownThrough: number | null;
+  /** Questions answered correctly that are dated after the family window. */
+  lateCorrect: number;
+  /** Questions answered wrongly that are dated well before the family window. */
+  earlyWrong: number;
+  /** The advertised family's window, when both edges are known. */
+  window: { from: number; to: number } | null;
 }
 
 /**
@@ -179,6 +227,23 @@ export interface RandomNumberFingerprint {
   baselineSource: 'cohort-median' | 'none';
 }
 
+/**
+ * Result of the stylometry pass, computed from text the identity runs already
+ * collected — no extra requests. Writing habits (sentence length, markdown
+ * density, dash and ellipsis rates) are stable per model family and differ
+ * between them, so a model that writes unlike its siblings on the same
+ * endpoint is softly suspicious.
+ */
+export interface StyleFingerprint {
+  /** Mean relative per-feature deviation from the cohort median, [0, 3]. */
+  divergence: number | null;
+  /** Cohort-learned cutoff; null when no cohort was available. */
+  threshold: number | null;
+  /** Characters of run text the features were extracted from. */
+  chars: number;
+  baselineSource: 'cohort-median' | 'none';
+}
+
 export interface IdentityReport {
   modelId: string;
   verdict: IdentityVerdict;
@@ -194,6 +259,10 @@ export interface IdentityReport {
   attribution: Attribution | null;
   /** Present when the random-number fingerprint probe was run. */
   fingerprint: RandomNumberFingerprint | null;
+  /** Present when the knowledge-cutoff probe ran and got answers. */
+  cutoff: KnowledgeCutoffResult | null;
+  /** Present when the cohort stylometry pass scored this model. */
+  stylometry: StyleFingerprint | null;
   error: ApiError | null;
   at: number;
 }

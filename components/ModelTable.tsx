@@ -3,9 +3,10 @@
 import { ArrowRight } from 'lucide-react';
 import { ms } from '@/lib/format';
 import { VERDICT_BLURB, VERDICT_TONE } from '@/lib/identity';
+import { monthLabel } from '@/lib/registry';
 import { StatusPill, type ResultStatus } from './StatusPill';
 import { IdentityPill } from './IdentityPill';
-import type { ApiError, IdentityReport, ModelInfo } from '@/lib/types';
+import type { ApiError, IdentityReport, IdentitySignal, ModelInfo } from '@/lib/types';
 import styles from './ModelTable.module.css';
 
 export interface RowResult {
@@ -34,6 +35,99 @@ interface RowProps {
   checked: boolean;
   disabled: boolean;
   onToggle: (id: string, next: boolean) => void;
+}
+
+/** One labelled bar of a comparison meter. */
+function MeterBar({
+  label,
+  value,
+  max,
+  alt,
+  display,
+}: {
+  label: string;
+  value: number;
+  max: number;
+  alt?: boolean;
+  display?: string;
+}) {
+  const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
+  return (
+    <div className={styles.meterRow}>
+      <span>{label}</span>
+      <span className={styles.meterTrack}>
+        <span className={`${styles.meterFill} ${alt ? styles.meterFillAlt : ''}`} style={{ width: `${pct}%` }} />
+      </span>
+      <span className={styles.meterValue}>{display ?? value.toLocaleString('en-US')}</span>
+    </div>
+  );
+}
+
+/**
+ * Raw-measurement comparison for signals whose evidence carries two comparable
+ * numbers (measured vs reference). Numbers stay in the detail sentence — the
+ * bars are a glance aid, never the only channel.
+ */
+function SignalMeter({ signal }: { signal: IdentitySignal }) {
+  const evidence = signal.evidence as Record<string, unknown> | undefined;
+  if (!evidence) return null;
+
+  if (signal.id === 'tokenizer-fingerprint' && typeof evidence.count === 'number') {
+    const count = evidence.count as number;
+    const baseline = typeof evidence.baseline === 'number' ? (evidence.baseline as number) : null;
+    if (baseline === null) return null;
+    const max = Math.max(count, baseline);
+    return (
+      <div className={styles.meterList}>
+        <MeterBar label="this model" value={count} max={max} />
+        <MeterBar label="cohort median" value={baseline} max={max} alt />
+      </div>
+    );
+  }
+
+  if (signal.id === 'output-ceiling' && typeof evidence.measuredCeiling === 'number' && typeof evidence.expected === 'number') {
+    const measured = evidence.measuredCeiling as number;
+    const expected = evidence.expected as number;
+    if (expected === 0) return null;
+    const max = Math.max(measured, expected);
+    return (
+      <div className={styles.meterList}>
+        <MeterBar label="measured cap" value={measured} max={max} />
+        <MeterBar label="advertised cap" value={expected} max={max} alt />
+      </div>
+    );
+  }
+
+  if (
+    (signal.id === 'random-number-fingerprint' || signal.id === 'style-fingerprint') &&
+    typeof evidence.divergence === 'number' &&
+    typeof evidence.threshold === 'number'
+  ) {
+    const divergence = evidence.divergence as number;
+    const threshold = evidence.threshold as number;
+    const max = Math.max(divergence, threshold) * 1.1;
+    return (
+      <div className={styles.meterList}>
+        <MeterBar label="divergence" value={Number(divergence.toFixed(2))} max={max} />
+        <MeterBar label="cohort threshold" value={Number(threshold.toFixed(2))} max={max} alt />
+      </div>
+    );
+  }
+
+  if (signal.id === 'knowledge-cutoff' && typeof evidence.knownThrough === 'number') {
+    const knownThrough = evidence.knownThrough as number;
+    const window = evidence.window as { from: number; to: number } | undefined;
+    if (!window) return null;
+    const max = Math.max(knownThrough, window.to);
+    return (
+      <div className={styles.meterList}>
+        <MeterBar label="knows through" value={knownThrough} max={max} display={monthLabel(knownThrough)} />
+        <MeterBar label="window ends" value={window.to} max={max} alt display={monthLabel(window.to)} />
+      </div>
+    );
+  }
+
+  return null;
 }
 
 /**
@@ -154,6 +248,7 @@ function ModelRow({
                   )}
                 </span>
                 <span className={styles.signalDetail}>{s.detail}</span>
+                <SignalMeter signal={s} />
               </li>
             ))}
           </ul>
@@ -196,6 +291,29 @@ function ModelRow({
                   {identity.attribution.candidateFamilies.length > 0 &&
                     ` · matches ${identity.attribution.candidateFamilies.join(', ')}`}
                 </p>
+              )}
+
+              {/* "Then which model is it?" — every measured fact pooled into a
+                  ranked shortlist. Relative scores, not probabilities: the
+                  point is to name plausible suspects, not to convict one. */}
+              {identity.attribution.rankedCandidates.length > 0 && (
+                <>
+                  <p className={styles.attributionLabel}>Closest registry families</p>
+                  <ul className={styles.candidateList}>
+                    {identity.attribution.rankedCandidates.map((c) => (
+                      <li key={`${c.vendor}-${c.family}`} className={styles.candidate}>
+                        <strong>
+                          {c.vendor} {c.family}
+                        </strong>{' '}
+                        <span className={styles.candidateScore}>{c.score}%</span>
+                        {identity.advertised && c.family === identity.advertised.family && (
+                          <span className={styles.candidateAdvertised}> — as sold</span>
+                        )}
+                        {c.why.length > 0 && <span className={styles.candidateWhy}> · {c.why.join('; ')}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                </>
               )}
 
               {identity.attribution.quotes.length > 0 && (

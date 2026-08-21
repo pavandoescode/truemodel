@@ -34,6 +34,15 @@
   color: var(--fg-subtle);
 }
 
+/* Confidence number inside an identity pill: same colour as the verdict it
+   qualifies (inherits), softer weight so the words stay primary. */
+.pillConfidence {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  opacity: 0.75;
+  padding-left: var(--s-1);
+}
+
 .spin {
   animation: statusSpin 900ms linear infinite;
 }
