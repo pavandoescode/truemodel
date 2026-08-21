@@ -14,8 +14,8 @@
 
 import { isoStamp } from '@/lib/format';
 import { VERDICT_LABEL } from '@/lib/identity';
-import { REGISTRY_VERSION } from '@/lib/registry';
-import type { IdentityReport, IdentitySignal } from '@/lib/types/identity';
+import { monthLabel, REGISTRY_VERSION } from '@/lib/registry';
+import type { IdentityReport, IdentitySignal, KnowledgeCutoffResult, StyleFingerprint } from '@/lib/types/identity';
 
 /** Mirrors the version in package.json; recorded so a receipt names the tool that made it. */
 export const TOOL_VERSION = '1.0.0';
@@ -81,6 +81,8 @@ interface ReceiptModel {
     detail: string;
   }>;
   tokenizerCount: number | null;
+  cutoff: KnowledgeCutoffResult | null;
+  stylometry: StyleFingerprint | null;
 }
 
 interface ReceiptPayload {
@@ -110,6 +112,8 @@ function toModel(report: IdentityReport): ReceiptModel {
       detail: s.detail,
     })),
     tokenizerCount: report.tokenizerCount,
+    cutoff: report.cutoff ?? null,
+    stylometry: report.stylometry ?? null,
   };
 }
 
@@ -167,6 +171,27 @@ function modelSection(report: IdentityReport): string {
 
   if (report.tokenizerCount !== null && report.tokenizerCount !== undefined) {
     lines.push(`- Tokenizer count: ${report.tokenizerCount}`);
+  }
+
+  if (report.cutoff && report.cutoff.knownThrough !== null) {
+    const window = report.cutoff.window;
+    lines.push(
+      `- Knowledge horizon: through ${monthLabel(report.cutoff.knownThrough)}${window ? ` (family window ${monthLabel(window.from)}…${monthLabel(window.to)})` : ''}`,
+    );
+  }
+
+  if (attr?.rankedCandidates?.length) {
+    lines.push(
+      `- Closest registry families: ${attr.rankedCandidates
+        .map((c) => `${c.vendor} ${c.family} (${c.score}%)`)
+        .join(', ')}`,
+    );
+  }
+
+  if (report.stylometry?.divergence != null && report.stylometry.threshold != null) {
+    lines.push(
+      `- Writing style: deviation ${report.stylometry.divergence.toFixed(2)} vs cohort threshold ${report.stylometry.threshold.toFixed(2)}`,
+    );
   }
 
   lines.push('');

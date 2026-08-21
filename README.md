@@ -16,12 +16,19 @@ Point it at any endpoint that speaks the Anthropic `/v1/messages` shape, paste a
 
 - **Connect & discover** — list every model an endpoint exposes.
 - **Live testing** — real `/v1/messages` calls confirm an id actually responds.
-- **Model identification** — evidence-based probing to reveal the true model behind an id.
+- **Model identification** — evidence-based probing to reveal the true model behind an id:
+  - **Serving-stack leaks** (hard evidence): response `model` fields, ids named in validation errors, enforced output ceilings, tokenizer fingerprints scored against the endpoint's own cohort.
+  - **Capability probes** (tier separation): a five-puzzle battery graded per run — including a nonce word and a harder product the class of 2026 wasn't tuned on — plus strict instruction-following constraints.
+  - **Knowledge horizon** (generational evidence): dated-trivia bracketing compared against the advertised family's training-cutoff window; knowing facts from after the window is a contradiction no system prompt can paper over. One extra request.
+  - **Writing-style fingerprint** (zero extra requests): style vectors from the probe answers, scored cohort-relative like the tokenizer and random-number signals.
+  - **Closest-registry-families ranking**: when the label is doubted, a scored shortlist of which known families the measured evidence actually fits.
+- **Visible confidence** — every verdict carries its confidence percentage, per-signal evidence with raw-measurement meters, and a key-free Markdown evidence receipt you can share.
 - **Provider presets** — Anthropic, OpenRouter, LiteLLM, and custom endpoints, with `/v1` auto-append and the resolved URL echoed so there's no guessing.
 - **Custom headers & saved profiles** — reuse provider configs across sessions.
+- **Live request trace** — a console showing every provider call's two hops as they happen: browser → this app's route → the exact provider URL the route resolved, with each leg's timing, the status that came back, masked request/response headers, usage, and the full domain-to-domain redirect trail when a provider bounces the request. Credential headers never follow a redirect to another host. Nothing persisted; clear it any time.
 - **Write-back to your tools** — save passing models into Claude Code (`~/.claude/settings.json`) or OpenCode (`~/.opencode/config.json`), only when you ask.
 
-Your key is proxied through truemodel.tech's own server route, so it never goes to a third party and provider CORS rules don't apply. Nothing on your system is modified except the config files you explicitly choose to write.
+Your key is proxied through truemodel.tech's own server route, so it never goes to a third party and provider CORS rules don't apply. Nothing on your system is modified except the config files you explicitly choose to write. No database, no server-side storage: everything happens in your browser session.
 
 ## Tech Stack
 

@@ -1,0 +1,278 @@
+/* Request trace console. Deliberately compact and dense — it is a tail log,
+   read for the one line that explains where a request actually went, not a
+   designed surface. Tone carries status, but the status code and the words
+   are always present too. */
+
+.panel {
+  margin-top: var(--s-4);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md, var(--r-sm, 6px));
+  background: var(--bg-surface);
+  overflow: hidden;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-surface-2);
+}
+
+.headTitle {
+  font-family: var(--font-condensed);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  font-size: var(--t-caption);
+  font-weight: 600;
+  color: var(--fg-strong);
+}
+
+.head .btn {
+  margin-left: auto;
+}
+
+.inFlight {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  margin-left: var(--s-2);
+  color: var(--color-accent);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.row {
+  border-bottom: 1px solid var(--border);
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.row[data-tone='running'] .status {
+  color: var(--color-accent);
+}
+
+.row[data-tone='ok'] .status {
+  color: var(--color-success);
+  font-weight: 600;
+}
+
+.row[data-tone='fail'] .status {
+  color: var(--color-destructive);
+  font-weight: 600;
+}
+
+.details summary::-webkit-details-marker {
+  display: none;
+}
+
+.summary {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  cursor: pointer;
+  font-size: var(--t-caption);
+  color: var(--fg);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.summary:hover {
+  background: var(--bg-surface-2);
+}
+
+.status {
+  min-width: 3ch;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.route {
+  font-size: var(--t-caption);
+}
+
+.model {
+  font-size: var(--t-caption);
+  color: var(--fg-muted);
+  max-width: 22ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.legs {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  margin-left: auto;
+  color: var(--fg-muted);
+  font-size: var(--t-caption);
+  font-variant-numeric: tabular-nums;
+}
+
+.host {
+  color: var(--fg-strong);
+}
+
+/* Redirect chip in the summary row: appears only when the server followed
+   redirects, so a direct answer looks exactly as plain as it is. */
+.redirectChip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--s-1);
+  border: 1px solid var(--border-strong, var(--border));
+  border-radius: 999px;
+  font-size: var(--t-caption);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-warning, var(--fg-muted));
+  cursor: help;
+  white-space: nowrap;
+}
+
+/* Domain-to-domain trail inside the expanded body. */
+.hopList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  font-size: var(--t-caption);
+}
+
+.hop {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  flex-wrap: wrap;
+}
+
+.hopArrow {
+  color: var(--color-warning, var(--fg-muted));
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.authDropped {
+  color: var(--color-warning, var(--fg-muted));
+  font-style: italic;
+}
+
+.time {
+  color: var(--fg-subtle);
+  font-size: var(--t-caption);
+}
+
+.body {
+  padding: var(--s-2) var(--s-3) var(--s-3);
+  border-top: 1px dashed var(--border);
+  background: var(--bg-surface-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.fact {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--s-2);
+  font-size: var(--t-caption);
+}
+
+.factLabel {
+  font-family: var(--font-condensed);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  font-size: var(--t-caption);
+  color: var(--fg-subtle);
+  padding-top: 1px;
+}
+
+.factBody {
+  min-width: 0;
+  color: var(--fg);
+  line-height: var(--lh-normal);
+}
+
+.url {
+  word-break: break-all;
+  color: var(--color-accent);
+}
+
+.headerList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--t-caption);
+  word-break: break-all;
+}
+
+.errorText {
+  color: var(--color-destructive);
+}
+
+.preview {
+  margin: 0;
+  padding: var(--s-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--bg-surface);
+  font-size: var(--t-caption);
+  color: var(--fg-muted);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.note {
+  margin: 0;
+  padding: var(--s-2) var(--s-3);
+  border-top: 1px solid var(--border);
+  font-size: var(--t-caption);
+  color: var(--fg-subtle);
+  line-height: var(--lh-normal);
+}
+
+.spin {
+  animation: traceSpin 900ms linear infinite;
+}
+
+@keyframes traceSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
+}
+
+/* On narrow screens the hop timings wrap under the route line rather than
+   cramming five fields onto one row. */
+@media (max-width: 720px) {
+  .summary {
+    flex-wrap: wrap;
+    row-gap: var(--s-1);
+  }
+
+  .legs {
+    margin-left: 0;
+    width: 100%;
+    order: 5;
+  }
+}

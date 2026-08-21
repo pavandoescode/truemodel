@@ -15,7 +15,7 @@
  */
 
 /** Bump when MODEL_SPECS changes, so an evidence receipt records which model table produced its verdicts. */
-export const REGISTRY_VERSION = '2026.08.12';
+export const REGISTRY_VERSION = '2026.08.17';
 
 export type VendorId =
   | 'anthropic'
@@ -60,6 +60,16 @@ export interface ModelSpec {
   output: number;
   caps: CapsConfidence;
   /**
+   * Approximate training-data cutoff window, 'YYYY-MM'. A window, not a date,
+   * because vendors announce cutoffs loosely and revise them quietly. Used only
+   * as soft evidence: a model answering questions dated after its advertised
+   * family's window knows things that family cannot know, and one missing
+   * knowledge that is comfortably inside the window suggests an older
+   * generation. Never scored without both edges present.
+   */
+  cutoffFrom?: string;
+  cutoffTo?: string;
+  /**
    * Set on small/cheap models that are not expected to ace reasoning puzzles.
    * Their puzzle failures are recorded but never treated as proof of
    * substitution — a genuine Haiku or mini really does miscount letters, and
@@ -76,76 +86,76 @@ export interface ModelSpec {
  */
 export const MODEL_SPECS: readonly ModelSpec[] = [
   /* ---------------- Anthropic ---------------- */
-  { match: /fable-5|fable5/i, vendor: 'anthropic', family: 'Fable 5', context: 1_000_000, output: 128_000, caps: 'exact' },
-  { match: /mythos/i, vendor: 'anthropic', family: 'Mythos 5', context: 1_000_000, output: 128_000, caps: 'exact' },
-  { match: /opus-5|opus5/i, vendor: 'anthropic', family: 'Opus 5', context: 1_000_000, output: 128_000, caps: 'exact' },
-  { match: /sonnet-5|sonnet5/i, vendor: 'anthropic', family: 'Sonnet 5', context: 1_000_000, output: 128_000, caps: 'exact' },
-  { match: /haiku-4-5|haiku4-5|haiku-4\.5/i, vendor: 'anthropic', family: 'Haiku 4.5', context: 200_000, output: 64_000, caps: 'exact', small: true },
-  { match: /opus-4-8|opus4-8/i, vendor: 'anthropic', family: 'Opus 4.8', context: 1_000_000, output: 128_000, caps: 'exact', deprecated: true },
-  { match: /opus-4-7|opus4-7/i, vendor: 'anthropic', family: 'Opus 4.7', context: 1_000_000, output: 128_000, caps: 'exact', deprecated: true },
-  { match: /opus-4-6|opus4-6/i, vendor: 'anthropic', family: 'Opus 4.6', context: 1_000_000, output: 128_000, caps: 'exact', deprecated: true },
-  { match: /sonnet-4-6|sonnet4-6/i, vendor: 'anthropic', family: 'Sonnet 4.6', context: 1_000_000, output: 128_000, caps: 'exact', deprecated: true },
-  { match: /sonnet-4-5|sonnet4-5/i, vendor: 'anthropic', family: 'Sonnet 4.5', context: 200_000, output: 64_000, caps: 'exact', deprecated: true },
-  { match: /opus-4-5|opus4-5/i, vendor: 'anthropic', family: 'Opus 4.5', context: 200_000, output: 64_000, caps: 'exact', deprecated: true },
-  { match: /opus-4|opus4/i, vendor: 'anthropic', family: 'Opus 4', context: 200_000, output: 32_000, caps: 'exact', deprecated: true },
-  { match: /sonnet-4|sonnet4/i, vendor: 'anthropic', family: 'Sonnet 4', context: 200_000, output: 64_000, caps: 'exact', deprecated: true },
-  { match: /haiku-4|haiku4/i, vendor: 'anthropic', family: 'Haiku 4', context: 200_000, output: 64_000, caps: 'exact', small: true, deprecated: true },
-  { match: /3-7-sonnet/i, vendor: 'anthropic', family: 'Sonnet 3.7', context: 200_000, output: 64_000, caps: 'exact', deprecated: true },
-  { match: /3-5-sonnet/i, vendor: 'anthropic', family: 'Sonnet 3.5', context: 200_000, output: 8_192, caps: 'exact', deprecated: true },
-  { match: /3-5-haiku/i, vendor: 'anthropic', family: 'Haiku 3.5', context: 200_000, output: 8_192, caps: 'exact', small: true, deprecated: true },
-  { match: /3-opus/i, vendor: 'anthropic', family: 'Opus 3', context: 200_000, output: 4_096, caps: 'exact', deprecated: true },
-  { match: /3-sonnet/i, vendor: 'anthropic', family: 'Sonnet 3', context: 200_000, output: 4_096, caps: 'exact', deprecated: true },
-  { match: /3-haiku/i, vendor: 'anthropic', family: 'Haiku 3', context: 200_000, output: 4_096, caps: 'exact', small: true, deprecated: true },
-  { match: /claude-2|claude-instant/i, vendor: 'anthropic', family: 'Claude Legacy', context: 100_000, output: 4_096, caps: 'exact', small: true, deprecated: true },
+  { match: /fable-5|fable5/i, vendor: 'anthropic', family: 'Fable 5', context: 1_000_000, output: 128_000, caps: 'exact', cutoffFrom: '2026-01', cutoffTo: '2026-04' },
+  { match: /mythos/i, vendor: 'anthropic', family: 'Mythos 5', context: 1_000_000, output: 128_000, caps: 'exact', cutoffFrom: '2026-01', cutoffTo: '2026-04' },
+  { match: /opus-5|opus5/i, vendor: 'anthropic', family: 'Opus 5', context: 1_000_000, output: 128_000, caps: 'exact', cutoffFrom: '2026-01', cutoffTo: '2026-04' },
+  { match: /sonnet-5|sonnet5/i, vendor: 'anthropic', family: 'Sonnet 5', context: 1_000_000, output: 128_000, caps: 'exact', cutoffFrom: '2026-01', cutoffTo: '2026-04' },
+  { match: /haiku-4-5|haiku4-5|haiku-4\.5/i, vendor: 'anthropic', family: 'Haiku 4.5', context: 200_000, output: 64_000, caps: 'exact', cutoffFrom: '2025-07', cutoffTo: '2025-10', small: true },
+  { match: /opus-4-8|opus4-8/i, vendor: 'anthropic', family: 'Opus 4.8', context: 1_000_000, output: 128_000, caps: 'exact', cutoffFrom: '2025-09', cutoffTo: '2025-12', deprecated: true },
+  { match: /opus-4-7|opus4-7/i, vendor: 'anthropic', family: 'Opus 4.7', context: 1_000_000, output: 128_000, caps: 'exact', cutoffFrom: '2025-06', cutoffTo: '2025-09', deprecated: true },
+  { match: /opus-4-6|opus4-6/i, vendor: 'anthropic', family: 'Opus 4.6', context: 1_000_000, output: 128_000, caps: 'exact', cutoffFrom: '2025-04', cutoffTo: '2025-07', deprecated: true },
+  { match: /sonnet-4-6|sonnet4-6/i, vendor: 'anthropic', family: 'Sonnet 4.6', context: 1_000_000, output: 128_000, caps: 'exact', cutoffFrom: '2025-04', cutoffTo: '2025-07', deprecated: true },
+  { match: /sonnet-4-5|sonnet4-5/i, vendor: 'anthropic', family: 'Sonnet 4.5', context: 200_000, output: 64_000, caps: 'exact', cutoffFrom: '2025-01', cutoffTo: '2025-04', deprecated: true },
+  { match: /opus-4-5|opus4-5/i, vendor: 'anthropic', family: 'Opus 4.5', context: 200_000, output: 64_000, caps: 'exact', cutoffFrom: '2025-01', cutoffTo: '2025-03', deprecated: true },
+  { match: /opus-4|opus4/i, vendor: 'anthropic', family: 'Opus 4', context: 200_000, output: 32_000, caps: 'exact', cutoffFrom: '2024-10', cutoffTo: '2025-01', deprecated: true },
+  { match: /sonnet-4|sonnet4/i, vendor: 'anthropic', family: 'Sonnet 4', context: 200_000, output: 64_000, caps: 'exact', cutoffFrom: '2024-10', cutoffTo: '2025-01', deprecated: true },
+  { match: /haiku-4|haiku4/i, vendor: 'anthropic', family: 'Haiku 4', context: 200_000, output: 64_000, caps: 'exact', cutoffFrom: '2024-08', cutoffTo: '2024-11', small: true, deprecated: true },
+  { match: /3-7-sonnet/i, vendor: 'anthropic', family: 'Sonnet 3.7', context: 200_000, output: 64_000, caps: 'exact', cutoffFrom: '2024-11', cutoffTo: '2025-02', deprecated: true },
+  { match: /3-5-sonnet/i, vendor: 'anthropic', family: 'Sonnet 3.5', context: 200_000, output: 8_192, caps: 'exact', cutoffFrom: '2024-04', cutoffTo: '2024-08', deprecated: true },
+  { match: /3-5-haiku/i, vendor: 'anthropic', family: 'Haiku 3.5', context: 200_000, output: 8_192, caps: 'exact', cutoffFrom: '2024-04', cutoffTo: '2024-08', small: true, deprecated: true },
+  { match: /3-opus/i, vendor: 'anthropic', family: 'Opus 3', context: 200_000, output: 4_096, caps: 'exact', cutoffFrom: '2023-08', cutoffTo: '2023-12', deprecated: true },
+  { match: /3-sonnet/i, vendor: 'anthropic', family: 'Sonnet 3', context: 200_000, output: 4_096, caps: 'exact', cutoffFrom: '2023-01', cutoffTo: '2023-08', deprecated: true },
+  { match: /3-haiku/i, vendor: 'anthropic', family: 'Haiku 3', context: 200_000, output: 4_096, caps: 'exact', cutoffFrom: '2023-01', cutoffTo: '2023-08', small: true, deprecated: true },
+  { match: /claude-2|claude-instant/i, vendor: 'anthropic', family: 'Claude Legacy', context: 100_000, output: 4_096, caps: 'exact', cutoffFrom: '2022-09', cutoffTo: '2023-01', small: true, deprecated: true },
   /* ---------------- OpenAI ---------------- */
-  { match: /^(openai\/)?gpt-5[.-]?2/i, vendor: 'openai', family: 'GPT-5.2', context: 400_000, output: 128_000, caps: 'approx' },
-  { match: /^(openai\/)?gpt-5[.-]?1/i, vendor: 'openai', family: 'GPT-5.1', context: 400_000, output: 128_000, caps: 'approx' },
-  { match: /gpt-5.*(mini|nano)/i, vendor: 'openai', family: 'GPT-5 mini', context: 400_000, output: 128_000, caps: 'approx', small: true },
-  { match: /gpt-5/i, vendor: 'openai', family: 'GPT-5', context: 400_000, output: 128_000, caps: 'approx' },
-  { match: /gpt-4\.1/i, vendor: 'openai', family: 'GPT-4.1', context: 1_047_576, output: 32_768, caps: 'approx' },
-  { match: /gpt-4o-mini/i, vendor: 'openai', family: 'GPT-4o mini', context: 128_000, output: 16_384, caps: 'approx', small: true, deprecated: true },
-  { match: /gpt-4o/i, vendor: 'openai', family: 'GPT-4o', context: 128_000, output: 16_384, caps: 'approx', deprecated: true },
-  { match: /gpt-4-turbo/i, vendor: 'openai', family: 'GPT-4 Turbo', context: 128_000, output: 4_096, caps: 'approx', deprecated: true },
-  { match: /gpt-3\.5/i, vendor: 'openai', family: 'GPT-3.5', context: 16_385, output: 4_096, caps: 'approx', small: true, deprecated: true },
-  { match: /\bo4-mini/i, vendor: 'openai', family: 'o4-mini', context: 200_000, output: 100_000, caps: 'approx', small: true },
-  { match: /\bo3-mini/i, vendor: 'openai', family: 'o3-mini', context: 200_000, output: 100_000, caps: 'approx', small: true },
-  { match: /\bo3\b/i, vendor: 'openai', family: 'o3', context: 200_000, output: 100_000, caps: 'approx' },
-  { match: /\bo1\b/i, vendor: 'openai', family: 'o1', context: 200_000, output: 100_000, caps: 'approx', deprecated: true },
+  { match: /^(openai\/)?gpt-5[.-]?2/i, vendor: 'openai', family: 'GPT-5.2', context: 400_000, output: 128_000, caps: 'approx', cutoffFrom: '2025-11', cutoffTo: '2026-03' },
+  { match: /^(openai\/)?gpt-5[.-]?1/i, vendor: 'openai', family: 'GPT-5.1', context: 400_000, output: 128_000, caps: 'approx', cutoffFrom: '2025-08', cutoffTo: '2025-12' },
+  { match: /gpt-5.*(mini|nano)/i, vendor: 'openai', family: 'GPT-5 mini', context: 400_000, output: 128_000, caps: 'approx', cutoffFrom: '2025-03', cutoffTo: '2025-08', small: true },
+  { match: /gpt-5/i, vendor: 'openai', family: 'GPT-5', context: 400_000, output: 128_000, caps: 'approx', cutoffFrom: '2025-03', cutoffTo: '2025-08' },
+  { match: /gpt-4\.1/i, vendor: 'openai', family: 'GPT-4.1', context: 1_047_576, output: 32_768, caps: 'approx', cutoffFrom: '2024-11', cutoffTo: '2025-03' },
+  { match: /gpt-4o-mini/i, vendor: 'openai', family: 'GPT-4o mini', context: 128_000, output: 16_384, caps: 'approx', cutoffFrom: '2023-10', cutoffTo: '2024-05', small: true, deprecated: true },
+  { match: /gpt-4o/i, vendor: 'openai', family: 'GPT-4o', context: 128_000, output: 16_384, caps: 'approx', cutoffFrom: '2023-10', cutoffTo: '2024-06', deprecated: true },
+  { match: /gpt-4-turbo/i, vendor: 'openai', family: 'GPT-4 Turbo', context: 128_000, output: 4_096, caps: 'approx', cutoffFrom: '2023-04', cutoffTo: '2023-12', deprecated: true },
+  { match: /gpt-3\.5/i, vendor: 'openai', family: 'GPT-3.5', context: 16_385, output: 4_096, caps: 'approx', cutoffFrom: '2021-06', cutoffTo: '2021-12', small: true, deprecated: true },
+  { match: /\bo4-mini/i, vendor: 'openai', family: 'o4-mini', context: 200_000, output: 100_000, caps: 'approx', cutoffFrom: '2024-11', cutoffTo: '2025-05', small: true },
+  { match: /\bo3-mini/i, vendor: 'openai', family: 'o3-mini', context: 200_000, output: 100_000, caps: 'approx', cutoffFrom: '2024-08', cutoffTo: '2024-12', small: true },
+  { match: /\bo3\b/i, vendor: 'openai', family: 'o3', context: 200_000, output: 100_000, caps: 'approx', cutoffFrom: '2024-11', cutoffTo: '2025-05' },
+  { match: /\bo1\b/i, vendor: 'openai', family: 'o1', context: 200_000, output: 100_000, caps: 'approx', cutoffFrom: '2024-06', cutoffTo: '2024-10', deprecated: true },
 
   /* ---------------- Google ---------------- */
-  { match: /gemini-3.*(flash|lite)/i, vendor: 'google', family: 'Gemini 3 Flash', context: 1_048_576, output: 65_536, caps: 'approx', small: true },
-  { match: /gemini-3/i, vendor: 'google', family: 'Gemini 3 Pro', context: 1_048_576, output: 65_536, caps: 'approx' },
-  { match: /gemini-2\.5.*flash/i, vendor: 'google', family: 'Gemini 2.5 Flash', context: 1_048_576, output: 65_536, caps: 'approx', small: true },
-  { match: /gemini-2\.5/i, vendor: 'google', family: 'Gemini 2.5 Pro', context: 1_048_576, output: 65_536, caps: 'approx' },
-  { match: /gemini-2\.0/i, vendor: 'google', family: 'Gemini 2.0', context: 1_048_576, output: 8_192, caps: 'approx', small: true, deprecated: true },
-  { match: /gemini-1\.5-pro/i, vendor: 'google', family: 'Gemini 1.5 Pro', context: 2_097_152, output: 8_192, caps: 'approx', deprecated: true },
-  { match: /gemini-1\.5/i, vendor: 'google', family: 'Gemini 1.5 Flash', context: 1_048_576, output: 8_192, caps: 'approx', small: true, deprecated: true },
-  { match: /gemma-?3/i, vendor: 'google', family: 'Gemma 3', context: 128_000, output: 8_192, caps: 'approx', small: true },
+  { match: /gemini-3.*(flash|lite)/i, vendor: 'google', family: 'Gemini 3 Flash', context: 1_048_576, output: 65_536, caps: 'approx', cutoffFrom: '2025-09', cutoffTo: '2026-01', small: true },
+  { match: /gemini-3/i, vendor: 'google', family: 'Gemini 3 Pro', context: 1_048_576, output: 65_536, caps: 'approx', cutoffFrom: '2025-09', cutoffTo: '2026-01' },
+  { match: /gemini-2\.5.*flash/i, vendor: 'google', family: 'Gemini 2.5 Flash', context: 1_048_576, output: 65_536, caps: 'approx', cutoffFrom: '2025-01', cutoffTo: '2025-05', small: true },
+  { match: /gemini-2\.5/i, vendor: 'google', family: 'Gemini 2.5 Pro', context: 1_048_576, output: 65_536, caps: 'approx', cutoffFrom: '2025-01', cutoffTo: '2025-05' },
+  { match: /gemini-2\.0/i, vendor: 'google', family: 'Gemini 2.0', context: 1_048_576, output: 8_192, caps: 'approx', cutoffFrom: '2024-08', cutoffTo: '2024-11', small: true, deprecated: true },
+  { match: /gemini-1\.5-pro/i, vendor: 'google', family: 'Gemini 1.5 Pro', context: 2_097_152, output: 8_192, caps: 'approx', cutoffFrom: '2023-11', cutoffTo: '2024-05', deprecated: true },
+  { match: /gemini-1\.5/i, vendor: 'google', family: 'Gemini 1.5 Flash', context: 1_048_576, output: 8_192, caps: 'approx', cutoffFrom: '2023-11', cutoffTo: '2024-05', small: true, deprecated: true },
+  { match: /gemma-?3/i, vendor: 'google', family: 'Gemma 3', context: 128_000, output: 8_192, caps: 'approx', cutoffFrom: '2024-10', cutoffTo: '2025-01', small: true },
 
   /* ---------------- Meta ---------------- */
-  { match: /llama-?4.*maverick/i, vendor: 'meta', family: 'Llama 4 Maverick', context: 1_000_000, output: 8_192, caps: 'approx' },
-  { match: /llama-?4/i, vendor: 'meta', family: 'Llama 4 Scout', context: 1_000_000, output: 8_192, caps: 'approx' },
-  { match: /llama-?3[.-]?3/i, vendor: 'meta', family: 'Llama 3.3', context: 128_000, output: 8_192, caps: 'approx' },
-  { match: /llama-?3/i, vendor: 'meta', family: 'Llama 3', context: 128_000, output: 4_096, caps: 'approx', small: true, deprecated: true },
-  { match: /llama/i, vendor: 'meta', family: 'Llama', context: 8_192, output: 4_096, caps: 'approx', small: true, deprecated: true },
+  { match: /llama-?4.*maverick/i, vendor: 'meta', family: 'Llama 4 Maverick', context: 1_000_000, output: 8_192, caps: 'approx', cutoffFrom: '2025-01', cutoffTo: '2025-04' },
+  { match: /llama-?4/i, vendor: 'meta', family: 'Llama 4 Scout', context: 1_000_000, output: 8_192, caps: 'approx', cutoffFrom: '2025-01', cutoffTo: '2025-04' },
+  { match: /llama-?3[.-]?3/i, vendor: 'meta', family: 'Llama 3.3', context: 128_000, output: 8_192, caps: 'approx', cutoffFrom: '2024-07', cutoffTo: '2024-12' },
+  { match: /llama-?3/i, vendor: 'meta', family: 'Llama 3', context: 128_000, output: 4_096, caps: 'approx', cutoffFrom: '2023-11', cutoffTo: '2024-03', small: true, deprecated: true },
+  { match: /llama/i, vendor: 'meta', family: 'Llama', context: 8_192, output: 4_096, caps: 'approx', cutoffFrom: '2023-01', cutoffTo: '2023-07', small: true, deprecated: true },
 
   /* ---------------- Others ---------------- */
-  { match: /magistral/i, vendor: 'mistral', family: 'Magistral', context: 128_000, output: 40_000, caps: 'approx' },
-  { match: /mistral-large/i, vendor: 'mistral', family: 'Mistral Large', context: 128_000, output: 8_192, caps: 'approx' },
-  { match: /mixtral/i, vendor: 'mistral', family: 'Mixtral', context: 32_768, output: 8_192, caps: 'approx', small: true, deprecated: true },
-  { match: /mistral|ministral|devstral|codestral/i, vendor: 'mistral', family: 'Mistral', context: 32_768, output: 8_192, caps: 'approx', small: true },
-  { match: /deepseek.*(r1|reason)/i, vendor: 'deepseek', family: 'DeepSeek R1', context: 128_000, output: 32_768, caps: 'approx' },
-  { match: /deepseek/i, vendor: 'deepseek', family: 'DeepSeek V3', context: 128_000, output: 8_192, caps: 'approx' },
-  { match: /grok-?4/i, vendor: 'xai', family: 'Grok 4', context: 256_000, output: 64_000, caps: 'approx' },
-  { match: /grok/i, vendor: 'xai', family: 'Grok', context: 131_072, output: 32_768, caps: 'approx' },
-  { match: /qwen-?3|qwen3/i, vendor: 'alibaba', family: 'Qwen 3', context: 128_000, output: 32_768, caps: 'approx' },
-  { match: /qwen|tongyi/i, vendor: 'alibaba', family: 'Qwen', context: 128_000, output: 8_192, caps: 'approx' },
-  { match: /command-a|command-r/i, vendor: 'cohere', family: 'Command', context: 256_000, output: 8_192, caps: 'approx' },
-  { match: /nova-(pro|lite|micro|premier)/i, vendor: 'amazon', family: 'Nova', context: 300_000, output: 10_000, caps: 'approx', small: true },
-  { match: /titan/i, vendor: 'amazon', family: 'Titan', context: 32_000, output: 4_096, caps: 'approx', small: true, deprecated: true },
-  { match: /phi-?[45]/i, vendor: 'microsoft', family: 'Phi', context: 16_384, output: 4_096, caps: 'approx', small: true },
-  { match: /kimi|moonshot/i, vendor: 'moonshot', family: 'Kimi', context: 256_000, output: 32_768, caps: 'approx' },
-  { match: /glm-?4|zhipu/i, vendor: 'zhipu', family: 'GLM-4', context: 200_000, output: 128_000, caps: 'approx' },
+  { match: /magistral/i, vendor: 'mistral', family: 'Magistral', context: 128_000, output: 40_000, caps: 'approx', cutoffFrom: '2025-01', cutoffTo: '2025-04' },
+  { match: /mistral-large/i, vendor: 'mistral', family: 'Mistral Large', context: 128_000, output: 8_192, caps: 'approx', cutoffFrom: '2024-06', cutoffTo: '2024-11' },
+  { match: /mixtral/i, vendor: 'mistral', family: 'Mixtral', context: 32_768, output: 8_192, caps: 'approx', cutoffFrom: '2023-09', cutoffTo: '2023-12', small: true, deprecated: true },
+  { match: /mistral|ministral|devstral|codestral/i, vendor: 'mistral', family: 'Mistral', context: 32_768, output: 8_192, caps: 'approx', cutoffFrom: '2024-04', cutoffTo: '2024-10', small: true },
+  { match: /deepseek.*(r1|reason)/i, vendor: 'deepseek', family: 'DeepSeek R1', context: 128_000, output: 32_768, caps: 'approx', cutoffFrom: '2024-06', cutoffTo: '2024-12' },
+  { match: /deepseek/i, vendor: 'deepseek', family: 'DeepSeek V3', context: 128_000, output: 8_192, caps: 'approx', cutoffFrom: '2024-06', cutoffTo: '2024-12' },
+  { match: /grok-?4/i, vendor: 'xai', family: 'Grok 4', context: 256_000, output: 64_000, caps: 'approx', cutoffFrom: '2025-02', cutoffTo: '2025-06' },
+  { match: /grok/i, vendor: 'xai', family: 'Grok', context: 131_072, output: 32_768, caps: 'approx', cutoffFrom: '2024-04', cutoffTo: '2024-11' },
+  { match: /qwen-?3|qwen3/i, vendor: 'alibaba', family: 'Qwen 3', context: 128_000, output: 32_768, caps: 'approx', cutoffFrom: '2024-11', cutoffTo: '2025-04' },
+  { match: /qwen|tongyi/i, vendor: 'alibaba', family: 'Qwen', context: 128_000, output: 8_192, caps: 'approx', cutoffFrom: '2024-01', cutoffTo: '2024-09' },
+  { match: /command-a|command-r/i, vendor: 'cohere', family: 'Command', context: 256_000, output: 8_192, caps: 'approx', cutoffFrom: '2024-08', cutoffTo: '2024-12' },
+  { match: /nova-(pro|lite|micro|premier)/i, vendor: 'amazon', family: 'Nova', context: 300_000, output: 10_000, caps: 'approx', cutoffFrom: '2024-09', cutoffTo: '2025-01', small: true },
+  { match: /titan/i, vendor: 'amazon', family: 'Titan', context: 32_000, output: 4_096, caps: 'approx', cutoffFrom: '2023-01', cutoffTo: '2023-08', small: true, deprecated: true },
+  { match: /phi-?[45]/i, vendor: 'microsoft', family: 'Phi', context: 16_384, output: 4_096, caps: 'approx', cutoffFrom: '2024-06', cutoffTo: '2024-10', small: true },
+  { match: /kimi|moonshot/i, vendor: 'moonshot', family: 'Kimi', context: 256_000, output: 32_768, caps: 'approx', cutoffFrom: '2025-02', cutoffTo: '2025-06' },
+  { match: /glm-?4|zhipu/i, vendor: 'zhipu', family: 'GLM-4', context: 200_000, output: 128_000, caps: 'approx', cutoffFrom: '2024-09', cutoffTo: '2025-01' },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -220,6 +230,39 @@ export function familiesWithCeiling(ceiling: number, vendor?: VendorId | null): 
   return MODEL_SPECS.filter(
     (s) => s.output === ceiling && !s.deprecated && (!vendor || s.vendor === vendor),
   ).map((s) => s.family);
+}
+
+/**
+ * The advertised family's training-cutoff window, when both edges are known.
+ *
+ * Returns month numbers (`'YYYY-MM'` → absolute months since year 0) so callers
+ * can do arithmetic without re-parsing. A spec with only one edge, or none, is
+ * treated as unknown — the cutoff check skips rather than guesses.
+ */
+export function cutoffWindowOf(modelId: string): { from: number; to: number } | null {
+  const spec = specFor(modelId);
+  if (!spec?.cutoffFrom || !spec.cutoffTo) return null;
+  const from = monthNum(spec.cutoffFrom);
+  const to = monthNum(spec.cutoffTo);
+  if (from === null || to === null) return null;
+  return { from, to };
+}
+
+/** 'YYYY-MM' → absolute month number, or null when the string is malformed. */
+export function monthNum(ym: string): number | null {
+  const m = /^(\d{4})-(\d{2})$/.exec(ym.trim());
+  if (!m) return null;
+  const year = Number(m[1]);
+  const month = Number(m[2]);
+  if (month < 1 || month > 12) return null;
+  return year * 12 + (month - 1);
+}
+
+/** Absolute month number → 'YYYY-MM', the inverse of monthNum. */
+export function monthLabel(n: number): string {
+  const year = Math.floor(n / 12);
+  const month = (n % 12) + 1;
+  return `${year}-${String(month).padStart(2, '0')}`;
 }
 
 /** Distinct output caps across every known model, ascending. Derived, so it can't drift. */

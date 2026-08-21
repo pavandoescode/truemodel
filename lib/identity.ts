@@ -8,8 +8,10 @@ import {
   probeModelResolution,
   probeOutputCeiling,
   probeVendor,
+  rankFamilyCandidates,
   scanHeadersForModel,
 } from '@/lib/attribution';
+import { askCutoffQuestions, cutoffSignal } from '@/lib/knowledgeCutoff';
 import { VENDOR_LABEL, bareId, familyOf, isSmallModel, vendorOf, type VendorId } from '@/lib/registry';
 import { histogram, jensenShannon, sampleRandomNumbers } from '@/lib/randomFingerprint';
 import type {
@@ -40,19 +42,33 @@ import type {
  * are recorded as quotes for the user to read, and scored only when they
  * contradict the advertised vendor.
  */
-export const IDENTITY_PROBE = `Answer all five items. Use exactly this format, one item per line, nothing else:
+/**
+ * Items 6–8 were added because the class of 2026 was specifically tuned on the
+ * famous items: "strawberry" letter counts and 17 × 24 now appear in training
+ * data, so small models pass them and the items no longer separate tiers. The
+ * nonce word restores the letter-counting test (it cannot have been trained
+ * on), 847 × 36 restores the arithmetic one, and the seven-word constraint is
+ * a stricter instruction-following test than a single fixed word.
+ */
+export const IDENTITY_PROBE = `Answer all eight items. Use exactly this format, one item per line, nothing else:
 
 1: <answer>
 2: <answer>
 3: <answer>
 4: <answer>
 5: <answer>
+6: <answer>
+7: <answer>
+8: <answer>
 
 1. What is 17 * 24?
 2. How many times does the letter r appear in the word strawberry?
 3. Write the single Python expression that sums the integers 1 through 100 inclusive.
 4. Reply with the single word: ORANGE
-5. Which AI model are you? Give the exact model name only.`;
+5. Which AI model are you? Give the exact model name only.
+6. What is 847 * 36?
+7. How many times does the letter r appear in the word retrospectrometer?
+8. Reply with exactly seven words.`;
 
 /**
  * Fixed text for the tokenizer fingerprint. Deliberately mixes scripts,
@@ -120,6 +136,28 @@ export function checksPythonSum(answer: string): boolean {
   if (/sum\(range\(1,101\)\)/.test(a)) return true;
   if (/sum\(range\(101\)\)/.test(a)) return true;
   return /\b5050\b/.test(a);
+}
+
+/** 847 * 36 = 30492. Harder than 17 × 24, which small models now reliably pass. */
+export function checksHardArithmetic(answer: string): boolean {
+  const digits = answer.replace(/[,\s_]/g, '');
+  return /(^|[^\d])30492([^\d]|$)/.test(digits);
+}
+
+/** "retrospectrometer" — a nonce word — contains four r's. Not a fine-tuning target. */
+export function checksNonceCount(answer: string): boolean {
+  return /\b(four|4)\b/i.test(answer);
+}
+
+/**
+ * Item 8: exactly seven words. Markdown decoration is stripped before counting
+ * so `**word**` is one word, but hyphenated compounds count as one word too —
+ * the count is of whitespace-separated tokens, as for any word-count rule.
+ */
+export function checksSevenWords(answer: string): boolean {
+  const cleaned = answer.replace(/[*`_]/g, '').trim();
+  if (!cleaned) return false;
+  return cleaned.split(/\s+/).length === 7;
 }
 
 /** Instruction following: item 4 must be exactly ORANGE. */
@@ -392,6 +430,8 @@ function blankReport(modelId: string): IdentityReport {
     advertised: advertisedOf(modelId),
     attribution: null,
     fingerprint: null,
+    cutoff: null,
+    stylometry: null,
     error: null,
     at: Date.now(),
   };
@@ -467,6 +507,10 @@ export interface AttributeOptions extends Pick<EngineOptions, 'config' | 'provid
   runs: readonly IdentityRun[];
   /** The model's own answers about itself, to be reported but never trusted. */
   selfReports?: readonly string[];
+  /** True when every puzzle signal passed, false when any failed, null when none scored. */
+  acedPuzzles?: boolean | null;
+  /** Latest-dated fact the cutoff probe established the model knows (month number). */
+  knownThrough?: number | null;
 }
 
 /**
@@ -521,6 +565,16 @@ export async function attribute(opts: AttributeOptions): Promise<Attribution> {
   const candidateFamilies =
     ceiling.ceiling !== null ? familiesWithCeiling(ceiling.ceiling, servedVendorId ?? requestedVendorId) : [];
 
+  const rankedCandidates = rankFamilyCandidates({
+    requestedId: requested,
+    measuredCeiling: ceiling.ceiling,
+    ceilingValidated: !ceiling.unvalidated,
+    vendorHint: servedVendorId,
+    claimedVendorId: vendorGuess.vendorId,
+    acedPuzzles: opts.acedPuzzles ?? null,
+    knownThrough: opts.knownThrough ?? null,
+  });
+
   const attribution: Attribution = {
     servedModelId: echoed ? null : served.id,
     servedFamily: echoed ? null : servedFamily,
@@ -535,6 +589,7 @@ export async function attribute(opts: AttributeOptions): Promise<Attribution> {
     measuredCeiling: ceiling.ceiling,
     unvalidatedCeiling: ceiling.unvalidated,
     candidateFamilies,
+    rankedCandidates,
     advertised,
     claimedVendor: vendorGuess.vendor,
     vendorMentions: vendorGuess.mentions,
@@ -906,6 +961,14 @@ const PUZZLES: readonly PuzzleSpec[] = [
     check: checksPythonSum,
     expected: 'sum(range(1, 101))',
   },
+  { id: 'puzzle-hard-arithmetic', label: 'Hard arithmetic (847 × 36)', item: 6, check: checksHardArithmetic, expected: '30492' },
+  {
+    id: 'puzzle-nonce-count',
+    label: "Nonce letter counting (r's in retrospectrometer)",
+    item: 7,
+    check: checksNonceCount,
+    expected: '4',
+  },
 ];
 
 /** Response-id shapes a vendor's own API is known to emit. */
@@ -965,6 +1028,23 @@ export function buildSignals(input: BuildSignalsInput): IdentitySignal[] {
         ? 'The model did not answer this item.'
         : `${literalOk}/${literals.length} runs replied with exactly ORANGE.`,
     evidence: { literals },
+  });
+
+  // Item 8 is a second, stricter instruction-following check: the model must
+  // count its own words, which trips models that merely pattern-match "reply
+  // with the single word" prompts. Soft for the same reason item 4 is.
+  const sevenWord = ok.map((r) => extractAnswer(r.text, 8)).filter((a) => a !== '');
+  const sevenOk = sevenWord.filter((a) => checksSevenWords(a)).length;
+  signals.push({
+    id: 'format-constraint',
+    label: 'Word-count constraint (seven words)',
+    weight: 'soft',
+    status: sevenWord.length === 0 ? 'skip' : sevenOk === sevenWord.length ? 'pass' : sevenOk > 0 ? 'partial' : 'fail',
+    detail:
+      sevenWord.length === 0
+        ? 'The model did not answer this item.'
+        : `${sevenOk}/${sevenWord.length} runs replied with exactly seven words.`,
+    evidence: { sevenWord },
   });
 
   // Response-id shape. Only scored where the vendor's own API has a known shape;
@@ -1126,6 +1206,25 @@ export async function verifyModelIdentity(opts: VerifyOptions): Promise<Identity
     tokenizerBaseline: opts.tokenizerBaseline ?? null,
   });
 
+  // Knowledge-cutoff probe: one extra request, graded against the advertised
+  // family's registry window. Failure here is soft by design — cutoffs are
+  // announced loosely — but a model knowing facts from after its family's data
+  // was collected is a contradiction no system prompt can paper over. Skipped
+  // entirely (no signal) only when the request itself fails; a transport error
+  // says nothing about the model.
+  const cutoff = await askCutoffQuestions({
+    config: opts.config,
+    provider: opts.provider,
+    signal: opts.signal,
+    model: opts.model,
+    advertised: report.advertised,
+    requestedId: opts.model,
+  });
+  if (cutoff.result) {
+    report.cutoff = cutoff.result;
+    report.signals.push(cutoffSignal(cutoff.result, report.advertised));
+  }
+
   if (!opts.skipTokenizer && probeCount) {
     // Every succeeded run sent the same prompt, so billed input should be
     // identical; the median guards against a single anomalous run.
@@ -1143,6 +1242,15 @@ export async function verifyModelIdentity(opts: VerifyOptions): Promise<Identity
   }
 
   if (opts.attribute) {
+    // Capability profile and knowledge horizon feed the ranked "closest
+    // families" list, so they are computed before attribution.
+    const puzzleSignals = report.signals.filter((s) => s.id.startsWith('puzzle-'));
+    const acedPuzzles =
+      puzzleSignals.length > 0 && puzzleSignals.every((s) => s.status === 'pass')
+        ? true
+        : puzzleSignals.some((s) => s.status === 'fail')
+          ? false
+          : null;
     const attribution = await attribute({
       config: opts.config,
       provider: opts.provider,
@@ -1151,6 +1259,8 @@ export async function verifyModelIdentity(opts: VerifyOptions): Promise<Identity
       model: opts.model,
       runs: report.runs,
       selfReports: succeeded.map((r) => r.text),
+      acedPuzzles,
+      knownThrough: report.cutoff?.knownThrough ?? null,
     });
     report.attribution = attribution;
     report.signals.push(...attributionSignals(attribution, opts.model));

@@ -5,8 +5,11 @@ import {
   billedInputTokens,
   buildSignals,
   checksArithmetic,
+  checksHardArithmetic,
   checksLiteral,
+  checksNonceCount,
   checksPythonSum,
+  checksSevenWords,
   checksStrawberry,
   extractAnswer,
   readsClaimedVendor,
@@ -20,11 +23,14 @@ function signal(id: IdentitySignalId, status: IdentitySignal['status'], weight: 
   return { id, label: id, status, weight, detail: '' };
 }
 
+/** A seven-word reply that satisfies item 8's word-count constraint. */
+const SEVEN_WORDS = 'This reply contains exactly seven short words';
+
 /** A run that answered every item correctly, for signal-building tests. */
 function goodRun(index: number, name = 'Claude Opus 5', overrides: Partial<IdentityRun> = {}): IdentityRun {
   return {
     index,
-    text: `1: 408\n2: 3\n3: sum(range(1, 101))\n4: ORANGE\n5: ${name}`,
+    text: `1: 408\n2: 3\n3: sum(range(1, 101))\n4: ORANGE\n5: ${name}\n6: 30492\n7: 4\n8: ${SEVEN_WORDS}`,
     messageId: 'msg_01ABC',
     reportedModel: null,
     headers: null,
@@ -90,6 +96,33 @@ describe('answer checkers', () => {
     expect(checksLiteral('orange')).toBe(true);
     expect(checksLiteral('**ORANGE**')).toBe(true);
     expect(checksLiteral('The word is ORANGE')).toBe(false);
+  });
+
+  it('accepts only 30492 for the hard arithmetic item', () => {
+    expect(checksHardArithmetic('30492')).toBe(true);
+    expect(checksHardArithmetic('30,492.')).toBe(true);
+    expect(checksHardArithmetic('The answer is 30492.')).toBe(true);
+    expect(checksHardArithmetic('30491')).toBe(false);
+    expect(checksHardArithmetic('304920')).toBe(false);
+    expect(checksHardArithmetic('408')).toBe(false);
+  });
+
+  it('accepts four for the nonce letter count and rejects other counts', () => {
+    expect(checksNonceCount('4')).toBe(true);
+    expect(checksNonceCount('four')).toBe(true);
+    expect(checksNonceCount('There are 4 rs')).toBe(true);
+    expect(checksNonceCount('3')).toBe(false);
+    expect(checksNonceCount('14')).toBe(false); // '4' inside a larger number is not a count
+    expect(checksNonceCount('forty')).toBe(false);
+  });
+
+  it('counts exactly seven words for the format constraint', () => {
+    expect(checksSevenWords(SEVEN_WORDS)).toBe(true);
+    expect(checksSevenWords('**This** reply has exactly seven bold words')).toBe(true);
+    expect(checksSevenWords('Here are exactly seven tiny words now.')).toBe(true);
+    expect(checksSevenWords('Too few words')).toBe(false);
+    expect(checksSevenWords('This reply has one extra word beyond seven words here')).toBe(false);
+    expect(checksSevenWords('')).toBe(false);
   });
 
   it('reads the vendor a model names for itself, whoever it is', () => {
@@ -246,6 +279,27 @@ describe('buildSignals', () => {
   it('scores puzzles hard for a flagship tier', () => {
     const signals = buildSignals({ ...args, modelId: 'claude-opus-5', runs: [goodRun(0)] });
     expect(signals.find((s) => s.id === 'puzzle-strawberry')?.weight).toBe('hard');
+    expect(signals.find((s) => s.id === 'puzzle-hard-arithmetic')?.weight).toBe('hard');
+    expect(signals.find((s) => s.id === 'puzzle-nonce-count')?.weight).toBe('hard');
+  });
+
+  it('scores the new puzzle items like the old ones, per-run with partial', () => {
+    const signals = buildSignals({ ...args, modelId: 'claude-opus-5', runs: [goodRun(0)] });
+    expect(signals.find((s) => s.id === 'puzzle-hard-arithmetic')?.status).toBe('pass');
+    expect(signals.find((s) => s.id === 'puzzle-nonce-count')?.status).toBe('pass');
+    expect(signals.find((s) => s.id === 'format-constraint')?.status).toBe('pass');
+    expect(signals.find((s) => s.id === 'format-constraint')?.weight).toBe('soft');
+
+    const halfRight = goodRun(0, 'Claude Opus 5', { text: `1: 408\n2: 3\n3: sum(range(1, 101))\n4: ORANGE\n5: Claude Opus 5\n6: 30492\n7: 4\n8: I cannot count words` });
+    const mixed = buildSignals({ ...args, modelId: 'claude-opus-5', runs: [goodRun(0), halfRight] });
+    expect(mixed.find((s) => s.id === 'format-constraint')?.status).toBe('partial');
+  });
+
+  it('skips the new items when the model answered nothing for them', () => {
+    const oldFormat = goodRun(0, 'Claude Opus 5', { text: '1: 408\n2: 3\n3: sum(range(1, 101))\n4: ORANGE\n5: Claude Opus 5' });
+    const signals = buildSignals({ ...args, modelId: 'claude-opus-5', runs: [oldFormat] });
+    expect(signals.find((s) => s.id === 'puzzle-hard-arithmetic')?.status).toBe('skip');
+    expect(signals.find((s) => s.id === 'format-constraint')?.status).toBe('skip');
   });
 
   it('refuses to score puzzles against a small tier that genuinely fails them', () => {

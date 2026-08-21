@@ -1,4 +1,4 @@
-import type { AuthStyle, WireConfig } from '@/lib/types';
+import type { AuthStyle, RedirectHop, WireConfig } from '@/lib/types';
 
 export const SENSITIVE_HEADER_KEYS = [
   'authorization',
@@ -114,34 +114,123 @@ export interface FetchOutcome {
   latencyMs: number;
   networkError: Error | null;
   timedOut: boolean;
+  /**
+   * Every redirect hop followed, in order: where the request was sent, where
+   * the server pointed it, and with what status. Empty when the provider
+   * answered directly. `authDropped` marks hops to a different host, where the
+   * credential headers are deliberately not forwarded (see below).
+   */
+  redirects: RedirectHop[];
 }
 
-/** fetch with an AbortController timeout; never throws. */
-export async function timedFetch(url: string, init: RequestInit, timeoutMs: number): Promise<FetchOutcome> {
+/** Headers that carry credentials and must never follow a redirect to another host. */
+const CREDENTIAL_HEADER_KEYS = [
+  'authorization',
+  'x-api-key',
+  'api-key',
+  'x-goog-api-key',
+  'proxy-authorization',
+  'cookie',
+];
+
+function sameHost(a: string, b: string): boolean {
+  try {
+    return new URL(a).host.toLowerCase() === new URL(b).host.toLowerCase();
+  } catch {
+    return false;
+  }
+}
+
+/** Drop credential headers when a redirect crosses to a different host. */
+function stripCredentials(headers: Record<string, string>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(headers)) {
+    if (!CREDENTIAL_HEADER_KEYS.includes(k.toLowerCase())) out[k] = v;
+  }
+  return out;
+}
+
+function isPlainObject(x: unknown): x is Record<string, string> {
+  return typeof x === 'object' && x !== null && !Array.isArray(x);
+}
+
+/** Accept either a plain header record or a Headers instance. */
+function headersToRecord(headers: unknown): Record<string, string> {
+  if (typeof Headers !== 'undefined' && headers instanceof Headers) {
+    return Object.fromEntries(headers.entries());
+  }
+  return isPlainObject(headers) ? { ...headers } : {};
+}
+
+/**
+ * fetch with an AbortController timeout; never throws. Redirects are followed
+ * manually so three things happen on every hop:
+ *
+ * 1. the hop is recorded — the domain-to-domain trail the trace console shows;
+ * 2. `guard`, when given, re-validates the target — the pre-call check only
+ *    covers the first URL, and a redirect is exactly how a public endpoint
+ *    could otherwise point the request at an internal address;
+ * 3. credential headers are dropped when the redirect lands on a different
+ *    host, mirroring browser behaviour for `Authorization` — a redirect that
+ *    moves the request to an unknown host must not move the API key with it.
+ *    The hop is marked `authDropped` so the trail says so plainly.
+ */
+export async function timedFetch(
+  url: string,
+  init: RequestInit,
+  timeoutMs: number,
+  opts: { guard?: (url: string) => Promise<void> } = {},
+): Promise<FetchOutcome> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(new Error(`Timed out after ${timeoutMs}ms`)), timeoutMs);
   const started = performance.now();
   const maxRedirects = 10;
   let redirectCount = 0;
   let currentUrl = url;
-  let currentInit = { ...init, signal: controller.signal, cache: 'no-store' as const, redirect: 'manual' as const };
+  const headerSource = headersToRecord(init.headers);
+  let currentHeaders: Record<string, string> = { ...headerSource };
+  const redirects: RedirectHop[] = [];
 
   try {
     while (true) {
-      const response = await fetch(currentUrl, currentInit);
+      const response = await fetch(currentUrl, {
+        ...init,
+        headers: currentHeaders,
+        signal: controller.signal,
+        cache: 'no-store' as const,
+        redirect: 'manual' as const,
+      });
       if (response.status >= 300 && response.status < 400 && response.headers.has('location') && redirectCount < maxRedirects) {
         redirectCount++;
         const location = response.headers.get('location')!;
+        let nextUrl: string;
         try {
-          currentUrl = new URL(location, currentUrl).toString();
+          nextUrl = new URL(location, currentUrl).toString();
         } catch {
           // Invalid redirect URL — return the response already in hand rather
           // than re-fetching the same (unparseable-redirect) URL again.
-          return { response, latencyMs: Math.round(performance.now() - started), networkError: null, timedOut: false };
+          return { response, latencyMs: Math.round(performance.now() - started), networkError: null, timedOut: false, redirects };
         }
+        try {
+          // Every hop gets the same treatment as the first URL: a redirect is
+          // a fresh destination chosen by the server, not by the user.
+          if (opts.guard) await opts.guard(nextUrl);
+        } catch (err) {
+          return {
+            response: null,
+            latencyMs: Math.round(performance.now() - started),
+            networkError: err instanceof Error ? err : new Error(String(err)),
+            timedOut: false,
+            redirects,
+          };
+        }
+        const crossHost = !sameHost(currentUrl, nextUrl);
+        if (crossHost) currentHeaders = stripCredentials(currentHeaders);
+        redirects.push({ from: currentUrl, to: nextUrl, status: response.status, ...(crossHost ? { authDropped: true } : {}) });
+        currentUrl = nextUrl;
         continue;
       }
-      return { response, latencyMs: Math.round(performance.now() - started), networkError: null, timedOut: false };
+      return { response, latencyMs: Math.round(performance.now() - started), networkError: null, timedOut: false, redirects };
     }
   } catch (err) {
     const error = err instanceof Error ? err : new Error(String(err));
@@ -151,6 +240,7 @@ export async function timedFetch(url: string, init: RequestInit, timeoutMs: numb
       latencyMs: Math.round(performance.now() - started),
       networkError: timedOut ? new Error(`Timed out after ${timeoutMs}ms`) : error,
       timedOut,
+      redirects,
     };
   } finally {
     clearTimeout(timer);
