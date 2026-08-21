@@ -4,9 +4,12 @@ import {
   OUTPUT_BANDS,
   VENDOR_LABEL,
   bareId,
+  cutoffWindowOf,
   extractModelIds,
   familyOf,
   isSmallModel,
+  monthLabel,
+  monthNum,
   namespaceOf,
   nonexistentIdFor,
   specFor,
@@ -150,5 +153,44 @@ describe('extractModelIds', () => {
   it('keeps a namespaced unknown id but not a bare unknown word', () => {
     expect(extractModelIds('served by someco/wizard-13b-v2')).toEqual(['someco/wizard-13b-v2']);
     expect(extractModelIds('served by wizard13b')).toEqual([]);
+  });
+});
+
+describe('cutoff windows', () => {
+  it('gives every spec both window edges or neither', () => {
+    for (const spec of MODEL_SPECS) {
+      expect(
+        (spec.cutoffFrom === undefined) === (spec.cutoffTo === undefined),
+        `${spec.family} must define both cutoff edges or none`,
+      ).toBe(true);
+    }
+  });
+
+  it('stores windows that actually order generations correctly', () => {
+    // A newer generation must not claim an earlier knowledge horizon.
+    const opus5 = cutoffWindowOf('claude-opus-5')!;
+    const sonnet45 = cutoffWindowOf('claude-sonnet-4-5')!;
+    const legacy = cutoffWindowOf('claude-2')!;
+    expect(opus5.from).toBeGreaterThan(sonnet45.from);
+    expect(sonnet45.from).toBeGreaterThan(legacy.from);
+  });
+
+  it('returns null for unknown or windowless ids', () => {
+    expect(cutoffWindowOf('someco/wizard-13b-v2')).toBeNull();
+    expect(cutoffWindowOf('')).toBeNull();
+  });
+});
+
+describe('monthNum / monthLabel', () => {
+  it('round-trips YYYY-MM strings through absolute month numbers', () => {
+    expect(monthNum('2026-01')).toBe(2026 * 12);
+    expect(monthNum('2026-12')).toBe(2026 * 12 + 11);
+    expect(monthLabel(monthNum('2025-04')!)).toBe('2025-04');
+  });
+
+  it('rejects malformed month strings rather than guessing', () => {
+    expect(monthNum('2025-13')).toBeNull();
+    expect(monthNum('2025-1')).toBeNull();
+    expect(monthNum('banana')).toBeNull();
   });
 });

@@ -12,8 +12,9 @@ import type { KeyboardEvent, ReactElement } from 'react';
 import { isHardDiscoveryFailure, listModels } from '@/lib/models';
 import { testModel } from '@/lib/modelTest';
 import { forEachModel } from '@/lib/runner';
-import { countTokens, tokenizerBaseline, verifyModelIdentity } from '@/lib/identity';
+import { aggregateVerdict, countTokens, tokenizerBaseline, verifyModelIdentity } from '@/lib/identity';
 import { histogram, medianDistribution, sampleRandomNumbers, cohortDivergenceThreshold } from '@/lib/randomFingerprint';
+import { cohortStyleThreshold, medianStyleVector, styleDivergence, styleFeatures, styleSignal } from '@/lib/stylometry';
 import { classifyError } from '@/lib/errors';
 import { pluralize, downloadFile } from '@/lib/format';
 import { buildReceiptMarkdown, receiptFilename } from '@/lib/receipt';
@@ -34,6 +35,8 @@ import { Modal } from '@/components/Modal';
 import { ConnectionPanel, type ConnState } from '@/components/ConnectionPanel';
 import { ModelTable, type RowResult } from '@/components/ModelTable';
 import { GettingStarted } from '@/components/GettingStarted';
+import { TraceConsole } from '@/components/TraceConsole';
+import { clearTraces, subscribeToTraces, type RequestTrace } from '@/lib/requestTrace';
 import { getEffectiveEndpoint } from '@/lib/endpoint';
 import { buildClaudeSettingsJson } from '@/lib/claudeSettings';
 import type { ApiError, IdentityReport, ModelInfo, ModelTestResult, ProviderConfig } from '@/lib/types';
@@ -456,7 +459,7 @@ export default function Page(): ReactElement {
   /**
    * Fingerprint each selected model.
    *
-   * Sequential by default: the probe fires roughly eight requests per model, so
+   * Sequential by default: the probe fires roughly nine requests per model, so
    * firing every model at once trips provider rate limits, and a 429 mid-probe
    * reads as a failed signal rather than as the throttle it is. The concurrency
    * toggle opts into that risk for endpoints that can take it — it is the same
@@ -548,6 +551,7 @@ export default function Page(): ReactElement {
         : null;
 
     // Pass two: the actual probes, scored against that baseline.
+    const localReports: IdentityReport[] = [];
     await forEachModel(chosen, concurrent, controller.signal, async (model) => {
       // Marked here rather than up front so "Probing" means this model's probe
       // is in flight right now. Sequentially that is one row at a time;
@@ -565,9 +569,51 @@ export default function Page(): ReactElement {
       });
       setIdentityRunning((prev) => ({ ...prev, [model.id]: false }));
       if (controller.signal.aborted) return;
+      localReports.push(report);
       setIdentities((prev) => ({ ...prev, [model.id]: report }));
       setProgress((prev) => (prev ? { ...prev, done: prev.done + 1 } : null));
     });
+
+    // Stylometry post-pass: writing-style fingerprints from text the runs
+    // already produced, so it costs zero extra requests. Cohort-relative like
+    // the tokenizer and random-number signals — each model's style vector is
+    // scored against the median of its siblings on this same endpoint, and
+    // the "too different" bar is learned from the cohort's own spread. Where
+    // it fires, the verdict is re-aggregated with the new signal included.
+    if (localReports.length > 1 && !controller.signal.aborted) {
+      const measured = localReports
+        .map((report) => {
+          const text = report.runs
+            .filter((r) => !r.error && r.text.trim() !== '')
+            .map((r) => r.text)
+            .join('\n');
+          return { report, vector: styleFeatures(text), chars: text.length };
+        })
+        .filter((m): m is { report: IdentityReport; vector: number[]; chars: number } => m.vector !== null);
+
+      const styleBaseline = measured.length > 1 ? medianStyleVector(measured.map((m) => m.vector)) : null;
+      const styleThreshold =
+        styleBaseline !== null ? cohortStyleThreshold(measured.map((m) => m.vector), styleBaseline) : null;
+
+      if (styleBaseline !== null && styleThreshold !== null) {
+        for (const { report, vector, chars } of measured) {
+          const divergence = styleDivergence(vector, styleBaseline);
+          report.stylometry = { divergence, threshold: styleThreshold, chars, baselineSource: 'cohort-median' };
+          report.signals.push(styleSignal(report.stylometry));
+          const { verdict, confidence } = aggregateVerdict(report.signals, {
+            vendor: report.attribution?.vendorMismatch,
+            family: report.attribution?.familyMismatch,
+          });
+          report.verdict = verdict;
+          report.confidence = confidence;
+        }
+        setIdentities((prev) => {
+          const next = { ...prev };
+          for (const { report } of measured) next[report.modelId] = report;
+          return next;
+        });
+      }
+    }
 
     setIdentityRunning({});
     setVerifying(false);
@@ -606,6 +652,13 @@ export default function Page(): ReactElement {
     setVerifying(false);
     setIdentityRunning({});
   }, []);
+
+  /* Request trace: the apiClient records every provider call's two hops as
+     they happen; the console below renders the live tail. Subscribe once —
+     the store is module-level, so it survives re-renders and shared nothing
+     else. */
+  const [traces, setTraces] = useState<readonly RequestTrace[]>([]);
+  useEffect(() => subscribeToTraces(setTraces), []);
 
   const saveSettings = useCallback(async () => {
     setSaving(true);
@@ -1074,7 +1127,7 @@ export default function Page(): ReactElement {
                         className="btn btn-ghost"
                         disabled={running || verifying || selectedCount === 0}
                         onClick={() => void runIdentityChecks()}
-                        title="Work out which model each id actually serves: fixed puzzles, a tokenizer probe, the endpoint's own model name, and its enforced output ceiling"
+                        title="Work out which model each id actually serves: fixed puzzles, a tokenizer probe, the endpoint's own model name, its enforced output ceiling, and a dated-knowledge probe"
                       >
                         {verifying ? (
                           <span className="spinner" aria-hidden="true" />
@@ -1084,7 +1137,7 @@ export default function Page(): ReactElement {
                         {verifying ? 'Identifying…' : 'Identify models'}
                       </button>
                       {/* Applies to both runners above, so it is worded for both.
-                          Identify fires roughly eight requests per model, which is
+                          Identify fires roughly nine requests per model, which is
                           where a rate limit gets hit first — hence the warning. */}
                       <label
                         className={`row hint ${styles.concurrentToggle}`}
@@ -1250,6 +1303,11 @@ export default function Page(): ReactElement {
               )}
             </div>
           </section>
+
+          {/* Where every request actually went, live: browser → this app's
+              route → the provider URL the route resolved, and what each hop
+              cost. Appears with the first provider call of the session. */}
+          <TraceConsole traces={traces} onClear={clearTraces} />
 
           <footer className={styles.footer}>
             <span className="subtle">
