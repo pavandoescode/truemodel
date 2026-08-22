@@ -192,9 +192,25 @@ export interface TokenCountOutcome {
  * reports a different number. Gateways that don't implement the endpoint return
  * `available: false` and the signal is skipped rather than counted against them.
  */
+const NO_COUNT_TOKENS_DETAIL = 'Provider does not implement /v1/messages/count_tokens.';
+
+/**
+ * Endpoints that already answered 404/405 for count_tokens.
+ *
+ * Each model is asked three times per run (cohort calibration, then twice while
+ * building its own report), so a gateway without the endpoint used to absorb 3n
+ * pointless round trips and fill the log with "404 — Endpoint not found" rows.
+ * A 404 here is a fact about the endpoint, not the model, so remember it.
+ * ponytail: unbounded set, but it holds one short string per endpoint tried.
+ */
+const NO_COUNT_TOKENS = new Set<string>();
+
 export async function countTokens(
   opts: Pick<EngineOptions, 'config' | 'provider' | 'signal'> & { model: string; text?: string },
 ): Promise<TokenCountOutcome> {
+  if (NO_COUNT_TOKENS.has(opts.config.endpoint)) {
+    return { count: null, available: false, detail: NO_COUNT_TOKENS_DETAIL };
+  }
   const res = await proxy<{ input_tokens?: number }>({
     config: opts.config,
     path: '/v1/messages/count_tokens',
@@ -208,13 +224,12 @@ export async function countTokens(
   });
 
   if (!res.ok || !res.data) {
+    const unsupported = res.status === 404 || res.status === 405;
+    if (unsupported) NO_COUNT_TOKENS.add(opts.config.endpoint);
     return {
       count: null,
       available: false,
-      detail:
-        res.status === 404
-          ? 'Provider does not implement /v1/messages/count_tokens.'
-          : `count_tokens unavailable (${res.status || 'network error'}).`,
+      detail: unsupported ? NO_COUNT_TOKENS_DETAIL : `count_tokens unavailable (${res.status || 'network error'}).`,
     };
   }
   const count = typeof res.data.input_tokens === 'number' ? res.data.input_tokens : null;
