@@ -288,8 +288,14 @@ export async function probeModelResolution(
       detail: `Answered a request for "${probedId}", a model that does not exist. The endpoint ignores the model name, so every id it advertises reaches the same backend and the name you request means nothing.`,
     };
   }
+  // 403 belongs here with the 4xx validation codes: the same key answered a
+  // real id moments earlier, so a refusal now is about the id, not the caller.
+  // new-api/one-api gateways behind openresty answer an unknown model with a
+  // bare 403 HTML page, and reading that as 'inconclusive' scored a provider
+  // down for doing exactly the right thing.
   if (
     res.status === 404 ||
+    res.status === 403 ||
     res.status === 400 ||
     res.status === 422 ||
     /not_found|does not exist|unknown model|invalid model|no such model|unsupported model/i.test(

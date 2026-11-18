@@ -2,6 +2,7 @@ import type { ApiError, ErrorCategory, ProviderId } from '@/lib/types';
 
 const CATEGORY_TITLES: Record<ErrorCategory, string> = {
   auth: 'Authentication failed',
+  forbidden: 'Request forbidden',
   'rate-limit': 'Rate limited',
   'invalid-model': 'Model not available',
   'invalid-request': 'Invalid request',
@@ -18,7 +19,7 @@ const CATEGORY_TITLES: Record<ErrorCategory, string> = {
 export const STATUS_EXPLANATIONS: Record<number, string> = {
   400: 'The provider rejected the request body — usually an unsupported field or a bad model id.',
   401: 'The API key was missing, malformed, or rejected.',
-  403: 'The key is valid but not permitted to use this endpoint, model, or region.',
+  403: 'Refused, not unauthenticated: the key may lack access to this model, or an edge proxy blocked the request before the API saw it.',
   404: 'The path does not exist on this host. An Anthropic-shaped endpoint must accept POST /v1/messages.',
   405: 'The path exists but does not accept this HTTP method.',
   408: 'The provider gave up waiting for the request.',
@@ -34,14 +35,19 @@ export const STATUS_EXPLANATIONS: Record<number, string> = {
 
 function categoryFor(status: number | null, providerType: string | null, message: string): ErrorCategory {
   const m = message.toLowerCase();
-  if (status === 401 || status === 403) return 'auth';
+  if (status === 401) return 'auth';
+  // 403 is not an auth failure. Gateways return it for a model the key may not
+  // use, and the edge proxy in front of one (openresty, Cloudflare) returns it
+  // for requests that never reached the API at all. Telling the user to re-copy
+  // a key that just worked on the previous request is the wrong advice.
+  if (status === 403) return 'forbidden';
   if (status === 429) return 'rate-limit';
   if (status === 404) return 'not-found';
   if (status === 408 || status === 504) return 'timeout';
   if (status === 529 || providerType === 'overloaded_error') return 'overloaded';
   if (providerType === 'invalid_request_error' || providerType === 'invalid_request') return 'invalid-request';
   if (providerType === 'authentication_error' || providerType === 'unauthorized') return 'auth';
-  if (providerType === 'permission_error' || providerType === 'forbidden') return 'auth';
+  if (providerType === 'permission_error' || providerType === 'forbidden') return 'forbidden';
   if (providerType === 'not_found_error' || providerType === 'model_not_found') return 'invalid-model';
   if (providerType === 'rate_limit_error' || providerType === 'rate_limit_exceeded') return 'rate-limit';
   if (status !== null && status >= 500) return 'server';
@@ -61,6 +67,11 @@ const GENERIC_FIXES: Record<ErrorCategory, string[]> = {
     'Re-copy the key — trailing whitespace and newlines are a common cause.',
     'Confirm the key belongs to this endpoint; keys are not portable between providers.',
     'Check the auth style: Anthropic uses x-api-key, most gateways use Authorization: Bearer.',
+  ],
+  forbidden: [
+    'The key was accepted but this request was refused — check the key is entitled to this model.',
+    'An HTML body here means an edge proxy or WAF answered, not the API: the request never reached the model.',
+    'Gateways commonly answer 403 for a model id they do not serve — copy an id from the discovered list.',
   ],
   'rate-limit': [
     'Lower the concurrency setting in the batch runner.',
